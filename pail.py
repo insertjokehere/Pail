@@ -29,6 +29,30 @@ class BotCommand:
 		c=bot.connection
 		c.privmsg(query.RespondTo(),"Ok, %(who)s" % {'who':nm_to_n(query.From())})
 
+		
+class DeleteFactoid(BotCommand):
+	def __init__(self):
+		self._rx = re.compile("(forget|delete) #(\d+)",re.IGNORECASE)
+		
+	def Try(self,bot,query):
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				cursor = bot.db()
+				cursor.execute('select triggerkey from bucket_facts where id=%s',(_match.group(2)))
+				key = cursor.fetchall()[0][0]
+				bot.getCommand('factoidtrigger').clearCache(key)
+				cursor.execute('delete from bucket_facts where id=%s',(_match.group(2)))
+				cursor.close()
+				self.OK(bot,query)
+				resp = {'handled':True,'debug':'deleted #%(num)s for %(who)s'%{'who':query.From(),'num':_match.group(2)}}
+				bot.log(resp['debug'])
+				return resp
+		return {'handled':False}
+		
+	def RequireAdmin(self):
+		return True
+		
 class FactoidTrigger(BotCommand):
 	
 	def __init__(self):
@@ -61,7 +85,7 @@ class FactoidTrigger(BotCommand):
 		else:
 			return {'handled':False}
 	
-	def ClearCache(self, key=""):
+	def clearCache(self, key=""):
 		if key=="":
 			self._cache = {}
 		elif key in self._cache:
@@ -80,7 +104,7 @@ class TeachFactoid(BotCommand):
 				cursor = bot.db()
 				cursor.execute(r"insert into bucket_facts values(%s,%s,%s,0,0);",(_match.group(1).strip(),_match.group(2).strip(),_match.group(3).strip()))
 				cursor.close()
-				bot.getCommand('factoidtrigger').ClearCache(_match.group(1).strip())
+				bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 				self.OK(bot,query)
 				resp = {'handled':True,'debug':"%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':_match.group(1).strip(),'method':_match.group(2).strip(),'response':_match.group(3).strip(),'who':query.From()}}
 				bot.log(resp['debug'])
@@ -198,7 +222,8 @@ class Pail(SingleServerIRCBot):
 			'commandmodechange':CommandModeChange(),
 			'factoidtrigger':FactoidTrigger(),
 			'teachfactoid':TeachFactoid(),
-			'joinpartcommand':JoinPartCommand()
+			'joinpartcommand':JoinPartCommand(),
+			'deletefactoid':DeleteFactoid()
 		}
 
 		self.disabledCommands = {}
