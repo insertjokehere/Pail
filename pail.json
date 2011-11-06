@@ -1,0 +1,14 @@
+{
+	"server":"server1.entirelyrandom.net",
+	"port":6667,
+	"nickname":"pail",
+	"disabledCommands":[],
+	"admins":["Will"],
+	"logChannel":"#projectpail",
+	"dbHost":"127.0.0.1",
+	"dbUser":"root",
+	"dbPass":"not-my-real-password",
+	"dbDB":"bucket",
+	"ignore":["raeith|bot"],
+	"channels":["#projectpail"]
+}

@@ -1,24 +1,22 @@
+"""
+Pail IRC Bot
+(c) William Hughes, 2011
+Licence is yet to be determined
+
+Requires:
+irclib <http://python-irclib.sourceforge.net/>
+MySQLdb <http://mysql-python.sourceforge.net/>
+"""
 
 from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, nm_to_h, irc_lower, ip_numstr_to_quad, ip_quad_to_numstr
 import re
 import MySQLdb
 import random
+import json
+import sys 
 
-config = {
-	'channels': ['#projectpail'],
-	'server':'server1.entirelyrandom.net',
-	'port':6667,
-	'nickname':'pail',
-	'disabledCommands':[],
-	'admins':['Will'],
-	'logChannel':'#projectpail',
-	'dbHost':'127.0.0.1',
-	'dbUser':'root',
-	'dbPass':'not-my-real-password',
-	'dbDB':'bucket',
-	'ignore':[]
-}
+config = {}
 
 class BotCommand:
 	def RequiresAdmin(self):
@@ -44,7 +42,7 @@ class FactoidTrigger(BotCommand):
 			isCached = True
 		else:
 			cursor = bot.db()
-			cursor.execute('select triggerkey,method,response,id from bucket_facts where triggerkey="%(trigger)s";' % {'trigger':query.Message()})
+			cursor.execute('select triggerkey,method,response,id from bucket_facts where triggerkey=%s;',(query.Message()))
 			facts = cursor.fetchall()
 			cursor.close()
 		if len(facts) > 0:
@@ -72,7 +70,7 @@ class FactoidTrigger(BotCommand):
 class TeachFactoid(BotCommand):
 	
 	def __init__(self):
-		self._rx = re.compile(r'([\s.,!#&*:;\'\"\w]+) <(\w+)> ([\s.,!#&*:;\'\"\w@$%]+)',re.IGNORECASE)
+		self._rx = re.compile(r'([^@$%]+) <(\w+)> (.+)',re.IGNORECASE)
 		
 	def Try(self,bot,query):
 		c=bot.connection
@@ -80,7 +78,7 @@ class TeachFactoid(BotCommand):
 		if _match and query.Directed():
 			if _match.group(1).strip() != "" and _match.group(2).strip() != "" and _match.group(2).strip() != "":
 				cursor = bot.db()
-				cursor.execute(r"insert into bucket_facts values('%(key)s','%(method)s','%(resp)s',0,0);"%{'key':_match.group(1).strip(),'method':_match.group(2).strip(),'resp':_match.group(3).strip()})
+				cursor.execute(r"insert into bucket_facts values(%s,%s,%s,0,0);",(_match.group(1).strip(),_match.group(2).strip(),_match.group(3).strip()))
 				cursor.close()
 				bot.getCommand('factoidtrigger').ClearCache(_match.group(1).strip())
 				self.OK(bot,query)
@@ -276,9 +274,24 @@ class Pail(SingleServerIRCBot):
 			self._connectDB()
 		return self._db.cursor()
 	
+	def saveConfig(self):
+		stream = open('pail.yml','w')
+		json.dump(config,stream, sort_keys=True, indent=4)
+		stream.close()
+	
 def main():	
+	global configfile, config
+	if len(sys.argv) > 1:
+		configfile = sys.argv[1]
+	else:
+		configfile = 'pail.json'
+	f = open(configfile,'r')
+	config = json.load(f)
+	f.close()
 	bot = Pail(config['nickname'], config['server'], config['port'])
 	bot.start()
+
+configfile = ""	
 
 if __name__ == "__main__":
 	main()
