@@ -27,7 +27,6 @@ class FactoidTrigger(BotCommand):
 		self._cache = {}
 	
 	def Try(self,bot,query):
-		c=bot.connection
 		isCached = False
 		if query.Message() in self._cache:
 			facts = self._cache[query.Message()]
@@ -39,15 +38,7 @@ class FactoidTrigger(BotCommand):
 			cursor.close()
 		if len(facts) > 0:
 			self._cache[query.Message()] = facts
-			fact = facts[random.randint(0,len(facts)-1)]
-			self.lastID = fact['id']
-			message = bot.getCommand('lookupvar').replaceVars(bot,query,fact['response'])
-			if fact['method']== 'reply':
-				c.privmsg(query.RespondTo(),message)
-			elif fact['method'] == 'action':
-				c.action(query.RespondTo(),message)
-			else:
-				c.privmsg(query.RespondTo(),"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message})
+			fact = self.sayFactoid(facts,bot,query)
 			resp = {'handled':True,'debug':"#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached}}
 			bot.log(resp['debug'])
 			return resp
@@ -59,6 +50,21 @@ class FactoidTrigger(BotCommand):
 			self._cache = {}
 		elif key in self._cache:
 			del self._cache[key]
+			
+	def sayFactoid(self, facts, bot, query):
+		c=bot.connection
+		if type(facts) is dict:
+			fact = facts
+		else:
+			fact = facts[random.randint(0,len(facts)-1)]
+		message = bot.getCommand('lookupvar').replaceVars(bot,query,fact['response'])
+		if fact['method']== 'reply':
+			c.privmsg(query.RespondTo(),message)
+		elif fact['method'] == 'action':
+			c.action(query.RespondTo(),message)
+		else:
+			c.privmsg(query.RespondTo(),"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message})
+		return fact
 
 class TeachFactoid(BotCommand):
 	

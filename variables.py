@@ -83,7 +83,6 @@ class LookupVar(BotCommand):
 		return config('admins')[random.randint(0,len(config('admins'))-1)]
 	
 	def _who(self,bot,query):
-		print 'who'
 		return nm_to_n(query.From())
 	
 	def _someone(self,bot,query):

@@ -8,7 +8,7 @@ irclib <http://python-irclib.sourceforge.net/>
 MySQLdb <http://mysql-python.sourceforge.net/>
 """
 
-from ircbot import SingleServerIRCBot
+from ircbot import SingleServerIRCBot, IRCDict
 from irclib import nm_to_n, nm_to_h, irc_lower, ip_numstr_to_quad, ip_quad_to_numstr
 import re
 import MySQLdb
@@ -140,8 +140,23 @@ class Pail(SingleServerIRCBot):
 		self._db = False
 		self._connectDB()
 		
+		modules = [factoids,variables]
+		
 		self._lastDebug = {}
-
+		
+		self.dontKnow = [
+			{
+				'key':'dontknow',
+				'method':'reply',
+				'response':"I'm sorry $who, I'm afraid I can't do that"
+			},
+			{
+				'key':'dontknow',
+				'method':'action',
+				'response':'explodes'
+			}
+		]
+		
 		self.commands = {
 			'test':TestCommand(),
 			'admintest':AdminTest(),
@@ -150,7 +165,7 @@ class Pail(SingleServerIRCBot):
 			'lastdebucCommand':LastDebugCommand()
 		}
 		
-		modules = [factoids,variables]
+		
 		
 		for m in modules:
 			self.commands = dict(self.commands.items() + m.Factory().items())
@@ -183,6 +198,7 @@ class Pail(SingleServerIRCBot):
 		
 	def processQuery(self, query):
 		if not nm_to_n(query.From()) in config('ignore'):
+			handled = False
 			for cmds in self.commands:
 				cmd = self.commands[cmds]
 				if (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin():
@@ -191,7 +207,10 @@ class Pail(SingleServerIRCBot):
 						if 'debug' in result:
 							self._lastDebug = {'message':result['debug'],'source':cmds}
 						self._db.commit()
+						handled = True
 						break
+			if not handled and query.Directed():
+				self.getCommand('factoidtrigger').sayFactoid(self.dontKnow,self,query)
 	
 	def disableCommand(self, command):
 		self.disabledCommands[command] = self.commands[command]
