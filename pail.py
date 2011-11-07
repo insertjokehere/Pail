@@ -170,42 +170,58 @@ class DeleteCommand(BotCommand):
 
 class DeleteFactoid(DeleteCommand):
 	def __init__(self):
-		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>#(\d+)|([^@$%]+))",'factoid','bucket_facts',self._clearCache)
+		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>(#\d+)|([^@$%]+))",'factoid','bucket_facts',self._clearCache)
 		
 	def _clearCache(self,bot,key):
 		bot.getCommand('factoidtrigger').clearCache(key)
 		
 class DeleteVariable(DeleteCommand):
 	def __init__(self):
-		DeleteCommand.__init__(self,r"(forget|delete)\s+var(iable)?\s+(?P<id>#(\d+)|(\w+))",'variable','bucket_vars',self._clearCache)
+		DeleteCommand.__init__(self,r"(forget|delete)\s+var(iable)?\s+(?P<id>(#\d+)|(\w+))",'variable','bucket_vars',self._clearCache)
 	
 	def _clearCache(self,bot,key):
 		bot.getCommand('lookupvar').clearCache(key)
-		
-class ProtectFactoid(BotCommand):
-#todo: batch protect/unprotect by key, modify to work with vars as well similar to delete
-	def __init__(self):
-		self._rx = re.compile(r'(protect|unprotect) (factoid )?#(\d+)',re.IGNORECASE)
-		
-	def RequireAdmin(self):
+
+class ProtectCommand(BotCommand):
+	def __init__(self, name, regex, table):
+		self._rx = re.compile(regex,re.IGNORECASE)
+		self._name = name
+		self._table = table
+	
+	def RequiresAdmin(self):
 		return True
 	
 	def Try(self,bot,query):
 		if query.Directed():
 			_match = self._rx.match(query.Message())
 			if _match:
-				cursor = bot.db()
-				if _match.group(1).lower() == "unprotect":
+				cursor=bot.db()
+				if _match.group('mode').lower().startswith('un'):
 					mode = 0
 				else:
 					mode = 1
-				cursor.execute(r'update bucket_facts set protected=%s where id=%s',(mode,_match.group(3)))
+				if _match.group('key').startswith('#'):
+					key='id'
+					id=_match.group('key')[1:]
+					resp = {'handled':True,'debug':"%(who)s %(mode)sed %(type)s #%(id)s"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id}}
+				else:
+					key='name'
+					id = _match.group('key')
+					resp = {'handled':True,'debug':"%(who)s batch %(mode)sed %(type)s '%(id)s'"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id}}
+				cursor.execute(r'update %(table)s set protected=%%s where %(key)s=%%s'%{'table':self._table,'key':key},(mode,id))
 				cursor.close()
 				self.OK(bot,query)
-				resp = {'handled':True,'debug':'%(mode)sed factoid #%(num)s for %(who)s'%{'mode':_match.group(1),'num':_match.group(3),'who':query.From()}}
 				bot.log(resp['debug'])
 				return resp
 		return {'handled':False}
+
+class ProtectFactoid(ProtectCommand):
+	def __init__(self):
+		ProtectCommand.__init__(self,'factoid',r'(?P<mode>protect|unprotect) fact(oid)? (?P<key>(#\d+)|([^@$%]+))','bucket_facts')
+
+class ProtectVariable(ProtectCommand):
+	def __init__(self):
+		ProtectCommand.__init__(self,'variable',r'(?P<mode>protect|unprotect) var(iable)? (?P<key>(#\d+)|(\w+))','bucket_vars')
 		
 class FactoidTrigger(BotCommand):
 	
@@ -220,7 +236,6 @@ class FactoidTrigger(BotCommand):
 			isCached = True
 		else:
 			cursor = bot.db()
-			print query.Message()
 			cursor.execute('select name,method,response,id from bucket_facts where name=%s;',(query.Message()))
 			facts = tuppleToList(['key','method','response','id'],cursor.fetchall())
 			cursor.close()
@@ -401,7 +416,8 @@ class Pail(SingleServerIRCBot):
 			'protectfactoid':ProtectFactoid(),
 			'lookupvar':LookupVar(),
 			'deletevariable':DeleteVariable(),
-			'addvar':AddVar()
+			'addvar':AddVar(),
+			'protectvariable':ProtectVariable()
 		}
 
 		self.disabledCommands = {}
