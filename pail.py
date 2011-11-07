@@ -28,7 +28,26 @@ class BotCommand:
 	def OK(self,bot,query):
 		c=bot.connection
 		c.privmsg(query.RespondTo(),"Ok, %(who)s" % {'who':nm_to_n(query.From())})
-			
+		
+class AddVar(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r'(?P<name>\w+)\s*:=\s*(?P<value>.+)',re.IGNORECASE)
+	
+	def Try(self,bot,query):
+		if query.Directed():
+			_match=self._rx.match(query.Message())
+			if _match:			
+				name=_match.group('name')
+				value = _match.group('value')
+				cursor=bot.db()
+				cursor.execute('insert into bucket_vars (name,value,protected) values(%s,%s,%s)',(name,value,0))
+				cursor.close()
+				self.OK(bot,query)
+				resp = {'handled':True,'debug':"%(who)s added value '%(val)s' to variable %(name)s"%{'who':nm_to_n(query.From()),'val':value,'name':name}}
+				bot.log(resp['debug'])
+				return resp
+		return {'handled':False}
+		
 class LookupVar(BotCommand):
 	
 	def __init__(self):
@@ -40,7 +59,7 @@ class LookupVar(BotCommand):
 			'op':self._admin
 		}
 		self._rx_find = re.compile(r'\$(\w+)',re.IGNORECASE)
-		self._rx = re.compile(r'(what is|show) var(iable)? \$?(?p<varname>\w+)\??',re.IGNORECASE)
+		self._rx = re.compile(r'(what is|show) var(iable)? \$?(?P<varname>\w+)\??',re.IGNORECASE)
 	
 	def Try(self,bot,query):
 		if query.Directed():
@@ -381,7 +400,8 @@ class Pail(SingleServerIRCBot):
 			'deletefactoid':DeleteFactoid(),
 			'protectfactoid':ProtectFactoid(),
 			'lookupvar':LookupVar(),
-			'deletevariable':DeleteVariable()
+			'deletevariable':DeleteVariable(),
+			'addvar':AddVar()
 		}
 
 		self.disabledCommands = {}
