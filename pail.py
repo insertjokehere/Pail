@@ -39,19 +39,44 @@ class DeleteFactoid(BotCommand):
 			_match = self._rx.match(query.Message())
 			if _match:
 				cursor = bot.db()
-				cursor.execute('select triggerkey from bucket_facts where id=%s',(_match.group(2)))
-				key = cursor.fetchall()[0][0]
-				bot.getCommand('factoidtrigger').clearCache(key)
-				cursor.execute('delete from bucket_facts where id=%s',(_match.group(2)))
-				cursor.close()
-				self.OK(bot,query)
-				resp = {'handled':True,'debug':'deleted #%(num)s for %(who)s'%{'who':query.From(),'num':_match.group(2)}}
+				cursor.execute('select triggerkey,protected from bucket_facts where id=%s',(_match.group(2)))
+				fact = cursor.fetchall()[0]
+				if (fact[1] == 1 and isAdmin(query.From())) or fact[1] == 0:
+					bot.getCommand('factoidtrigger').clearCache(fact[0])
+					cursor.execute('delete from bucket_facts where id=%s',(_match.group(2)))
+					cursor.close()
+					self.OK(bot,query)
+					resp = {'handled':True,'debug':'deleted #%(num)s for %(who)s'%{'who':query.From(),'num':_match.group(2)}}
+				else:
+					bot.connection.privmsg(query.RespondTo(),"Sorry, %(who)s, that factoid is protected"%{'who':nm_to_n(query.From())})
+					resp = {'handled':True,'debug':'%(who)s attempted to delete protected factoid #%(num)s'%{'who':query.From(),'num':_match.group(2)}}
 				bot.log(resp['debug'])
 				return resp
 		return {'handled':False}
 		
+class ProtectFactoid(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r'(protect|unprotect) (factoid )?#(\d+)',re.IGNORECASE)
+		
 	def RequireAdmin(self):
 		return True
+	
+	def Try(self,bot,query):
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				cursor = bot.db()
+				if _match.group(1).lower() == "unprotect":
+					mode = 0
+				else:
+					mode = 1
+				cursor.execute(r'update bucket_facts set protected=%s where id=%s',(mode,_match.group(3)))
+				cursor.close()
+				self.OK(bot,query)
+				resp = {'handled':True,'debug':'%(mode)sed factoid #%(num)s for %(who)s'%{'mode':_match.group(1),'num':_match.group(3),'who':query.From()}}
+				bot.log(resp['debug'])
+				return resp
+		return {'handled':False}
 		
 class FactoidTrigger(BotCommand):
 	
@@ -223,7 +248,8 @@ class Pail(SingleServerIRCBot):
 			'factoidtrigger':FactoidTrigger(),
 			'teachfactoid':TeachFactoid(),
 			'joinpartcommand':JoinPartCommand(),
-			'deletefactoid':DeleteFactoid()
+			'deletefactoid':DeleteFactoid(),
+			'protectfactoid':ProtectFactoid()
 		}
 
 		self.disabledCommands = {}
