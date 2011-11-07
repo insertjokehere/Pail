@@ -111,7 +111,7 @@ class IrcQuery:
 		self._from = fromuser
 		self._respondto = respondto
 		self._channel = channel
-		if messagetext.lower().startswith(config('nickname')+": "):
+		if messagetext.lower().startswith(config('nickname').lower()+": "):
 			self._messagetext = messagetext[len(config('nickname'))+2:].strip()
 			self._directed = True
 		else:
