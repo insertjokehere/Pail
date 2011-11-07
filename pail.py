@@ -28,7 +28,7 @@ class BotCommand:
 	def OK(self,bot,query):
 		c=bot.connection
 		c.privmsg(query.RespondTo(),"Ok, %(who)s" % {'who':nm_to_n(query.From())})
-
+			
 class LookupVar(BotCommand):
 	
 	def __init__(self):
@@ -40,13 +40,13 @@ class LookupVar(BotCommand):
 			'op':self._admin
 		}
 		self._rx_find = re.compile(r'\$(\w+)',re.IGNORECASE)
-		self._rx = re.compile(r'(what is|show) var(iable)? \$?(\w+)\??',re.IGNORECASE)
+		self._rx = re.compile(r'(what is|show) var(iable)? \$?(?p<varname>\w+)\??',re.IGNORECASE)
 	
 	def Try(self,bot,query):
 		if query.Directed():
 			_match = self._rx.match(query.Message())
 			if _match:
-				varname = _match.group(3)
+				varname = _match.group('varname')
 				self.replaceVars(bot,query,'$'+varname) #if the variable exists, it will be in the cache (unless it is a built-in)
 				if varname in self._cache:
 					msg = "%(varname)s: ["%{'varname':varname}
@@ -165,6 +165,7 @@ class DeleteVariable(DeleteCommand):
 		bot.getCommand('lookupvar').clearCache(key)
 		
 class ProtectFactoid(BotCommand):
+#todo: batch protect/unprotect by key, modify to work with vars as well similar to delete
 	def __init__(self):
 		self._rx = re.compile(r'(protect|unprotect) (factoid )?#(\d+)',re.IGNORECASE)
 		
@@ -230,38 +231,41 @@ class FactoidTrigger(BotCommand):
 class TeachFactoid(BotCommand):
 	
 	def __init__(self):
-		self._rx = re.compile(r'([^@$%]+) <(\w+)> (.+)',re.IGNORECASE)
+		self._rx = re.compile(r'(?P<key>[^@$%]+) <(?P<method>\w+)> (?P<response>.+)',re.IGNORECASE)
 		
 	def Try(self,bot,query):
 		c=bot.connection
 		_match = self._rx.match(query.Message())
 		if _match and query.Directed():
-			if _match.group(1).strip() != "" and _match.group(2).strip() != "" and _match.group(2).strip() != "":
+			if _match.group('key').strip() != "" and _match.group('method').strip() != "" and _match.group('response').strip() != "":
+				key = _match.group('key').strip()
+				method = _match.group('method').strip()
+				response = _match.group('response').strip()
 				cursor = bot.db()
-				cursor.execute(r"insert into bucket_facts (triggerkey,method,response,id,protected) values(%s,%s,%s,0,0);",(_match.group(1).strip(),_match.group(2).strip(),_match.group(3).strip()))
+				cursor.execute(r"insert into bucket_facts (triggerkey,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
 				cursor.close()
 				bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 				self.OK(bot,query)
-				resp = {'handled':True,'debug':"%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':_match.group(1).strip(),'method':_match.group(2).strip(),'response':_match.group(3).strip(),'who':query.From()}}
+				resp = {'handled':True,'debug':"%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':key,'method':method,'response':response,'who':query.From()}}
 				bot.log(resp['debug'])
 				return resp
 		return {'handled':False}
 			
 class CommandModeChange(BotCommand):
 	def __init__(self):
-		self._rx = re.compile(r'(disable|enable) command:? (\w+)',re.IGNORECASE)
+		self._rx = re.compile(r'(?P<method>disable|enable) command:? (?P<command>\w+)',re.IGNORECASE)
 
 	def Try(self, bot, query):
 		c=bot.connection
 		_match = self._rx.match(query.Message())
 		if _match and query.Directed():
-			if _match.group(1).lower() == 'disable':
-				bot.disableCommand(_match.group(2))
+			if _match.group('method').lower() == 'disable':
+				bot.disableCommand(_match.group('command'))
 				self.OK(bot,query)
 				bot.log("%(who)s disabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
 				return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
-			elif _match.group(1).lower() == 'enable':
-				bot.enableCommand(_match.group(2))
+			elif _match.group('method').lower() == 'enable':
+				bot.enableCommand(_match.group('command'))
 				self.OK(bot,query)
 				bot.log("%(who)s enabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
 				return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
@@ -275,7 +279,7 @@ class CommandModeChange(BotCommand):
 
 class JoinPartCommand(BotCommand):
 	def __init__(self):
-		self._rx = re.compile(r'(join|part) (#[\w-]+)',re.IGNORECASE)
+		self._rx = re.compile(r'(?P<mode>join|part) (?P<channel>#[\w-]+)',re.IGNORECASE)
 
 	def RequiresAdmin(self):
 		return True
@@ -284,12 +288,12 @@ class JoinPartCommand(BotCommand):
 		c=bot.connection
 		_match = self._rx.match(query.Message())
 		if query.Directed() and _match:
-			if _match.group(1) == "join":
-				bot.connection.join(_match.group(2))
+			if _match.group('mode') == "join":
+				bot.connection.join(_match.group('channel'))
 			else:
-				bot.connection.part(_match.group(2))
+				bot.connection.part(_match.group('channel'))
 			self.OK(bot,query)
-			resp={'handled':True,'debug':'%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group(1),'chan':_match.group(2),'who':query.From()}}
+			resp={'handled':True,'debug':'%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()}}
 			bot.log(resp['debug'])
 			return resp
 		return {'handled':False}
