@@ -31,9 +31,7 @@ class AddVar(BotCommand):
 			if _match:			
 				name=_match.group('name')
 				value = _match.group('value')
-				cursor=bot.db()
-				cursor.execute('insert into bucket_vars (name,value,protected) values(%s,%s,%s)',(name,value,0))
-				cursor.close()
+				bot.sql('insert into bucket_vars (name,value,protected) values(%s,%s,%s)',(name,value,0))
 				self.OK(bot,query)
 				resp = {'handled':True,'debug':"%(who)s added value '%(val)s' to variable %(name)s"%{'who':nm_to_n(query.From()),'val':value,'name':name}}
 				bot.log(resp['debug'])
@@ -111,9 +109,7 @@ class LookupVar(BotCommand):
 			elif varname in self._parent._cache:
 				return self._parent._cache[varname][random.randint(0,len(self._parent._cache[varname])-1)]['value']
 			else:
-				cursor = self._bot.db()
-				cursor.execute(r"select value,id from bucket_vars where name=%s",(varname.lower()))
-				vars = tuppleToList(['value','id'],cursor.fetchall())
+				var = bot.sql(r"select value,id from bucket_vars where name=%s",(varname.lower()),['value','id'])
 				if len(vars)>0:
 					self._parent._cache[varname]=vars
 					return self._parent._cache[varname][random.randint(0,len(self._parent._cache[varname])-1)]['value']

@@ -32,10 +32,7 @@ class FactoidTrigger(BotCommand):
 			facts = self._cache[query.Message()]
 			isCached = True
 		else:
-			cursor = bot.db()
-			cursor.execute('select name,method,response,id from bucket_facts where name=%s;',(query.Message()))
-			facts = tuppleToList(['key','method','response','id'],cursor.fetchall())
-			cursor.close()
+			facts = bot.sql(r'select name,method,response,id from bucket_facts where name=%s;',(query.Message()),['key','method','response','id'])
 		if len(facts) > 0:
 			self._cache[query.Message()] = facts
 			fact = self.sayFactoid(facts,bot,query)
@@ -79,9 +76,7 @@ class TeachFactoid(BotCommand):
 				key = _match.group('key').strip()
 				method = _match.group('method').strip()
 				response = _match.group('response').strip()
-				cursor = bot.db()
-				cursor.execute(r"insert into bucket_facts (name,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
-				cursor.close()
+				bot.sql(r"insert into bucket_facts (name,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
 				bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 				self.OK(bot,query)
 				resp = {'handled':True,'debug':"%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':key,'method':method,'response':response,'who':query.From()}}

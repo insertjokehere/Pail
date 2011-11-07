@@ -58,15 +58,12 @@ class DeleteCommand(BotCommand):
 		if query.Directed():
 			_match = self._rx.match(query.Message())
 			if _match:
-				cursor = bot.db()
 				if _match.group('id')[0] == "#": #delete by id number, otherwise by key
 					id=_match.group('id')[1:]
-					cursor.execute('select name,protected from %(table)s where id=%%s'%{'table':self._table},(id))
-					entry = tuppleToList(['key','protected'],cursor.fetchall())[0] #id is the primary key, so there will only be one tupple returned
+					entry = bot.sql(r'select name,protected from %(table)s where id=%%s'%{'table':self._table},(id),['key','protected'])[0] #id is the primary key, so there will only be one tupple returned
 					if (entry['protected']==1 and isAdmin(query.From())) or entry['protected'] == 0:
 						self._clearCache(bot,entry['key'])
-						cursor.execute('delete from %(table)s where id=%%s'%{'table':self._table},(id))
-						cursor.close()
+						bot.sql(r'delete from %(table)s where id=%%s'%{'table':self._table},(id))
 						self.OK(bot,query)
 						resp = {'handled':True,'debug':'deleted %(type)s #%(num)s for %(who)s'%{'type':self._type,'num':id,'who':nm_to_n(query.From())}}
 					else:
@@ -98,7 +95,6 @@ class ProtectCommand(BotCommand):
 		if query.Directed():
 			_match = self._rx.match(query.Message())
 			if _match:
-				cursor=bot.db()
 				if _match.group('mode').lower().startswith('un'):
 					mode = 0
 				else:
@@ -111,8 +107,7 @@ class ProtectCommand(BotCommand):
 					key='name'
 					id = _match.group('key')
 					resp = {'handled':True,'debug':"%(who)s batch %(mode)sed %(type)s '%(id)s'"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id}}
-				cursor.execute(r'update %(table)s set protected=%%s where %(key)s=%%s'%{'table':self._table,'key':key},(mode,id))
-				cursor.close()
+				bot.sql(r'update %(table)s set protected=%%s where %(key)s=%%s'%{'table':self._table,'key':key},(mode,id))
 				self.OK(bot,query)
 				bot.log(resp['debug'])
 				return resp

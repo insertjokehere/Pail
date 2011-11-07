@@ -21,7 +21,7 @@ import variables
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
-		self._rx = re.compile(r'(what was that\??|debug last|what\??)',re.IGNORECASE)
+		self._rx = re.compile(r'(what was that\??|debug last|what\??)$',re.IGNORECASE)
 		
 	def Try(self,bot,query):
 		if query.Directed() and 'message' in bot._lastDebug:
@@ -137,8 +137,7 @@ class Pail(SingleServerIRCBot):
 	def __init__(self, nickname, server, port=6667):
 		SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
 		#self.channel = channel
-		self._db = False
-		self._connectDB()
+		self._db = None
 		
 		modules = [factoids,variables]
 		
@@ -229,10 +228,27 @@ class Pail(SingleServerIRCBot):
 	def _connectDB(self):
 		self._db = MySQLdb.connect(host=config('dbHost'),user=config('dbUser'),passwd=config('dbPass'),db=config('dbDB'))
 	
-	def db(self):
-		if not self._db:
+	
+	def sql(self, query, args, mapnames=None):
+		if self._db is None:
 			self._connectDB()
-		return self._db.cursor()
+		try:
+			cursor = self._db.cursor()
+			cursor.execute(query,args)
+			results = cursor.fetchall()
+			cursor.close()
+			if not mapnames is None:
+				results = tuppleToList(mapnames,results)
+			return results
+		except (AttributeError, MySQLdb.OperationalError):
+			self._connectDB()
+			cursor = self._db.cursor()
+			cursor.execute(query,args)
+			results = cursor.fetchall()
+			cursor.close()
+			if not mapnames is None:
+				results = tuppleToList(mapnames,results)
+			return results
 	
 	
 def main():	
