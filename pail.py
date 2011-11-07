@@ -19,29 +19,40 @@ from common import *
 import factoids
 import variables
 
-	
+class LastDebugCommand(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r'(what was that\??|debug last|what\??)',re.IGNORECASE)
+		
+	def Try(self,bot,query):
+		if query.Directed() and 'message' in bot._lastDebug:
+			_match = self._rx.match(query.Message())
+			if _match:
+				bot.connection.privmsg(query.RespondTo(),"That was: (%(lastsource)s) '%(lastmessage)s'"%{'lastmessage':bot._lastDebug['message'],'lastsource':bot._lastDebug['source']})
+				return {'handled':True}
+		return {'handled':False}
+		
 class CommandModeChange(BotCommand):
 	def __init__(self):
 		self._rx = re.compile(r'(?P<method>disable|enable) command:? (?P<command>\w+)',re.IGNORECASE)
 
 	def Try(self, bot, query):
 		c=bot.connection
-		_match = self._rx.match(query.Message())
-		if _match and query.Directed():
-			if _match.group('method').lower() == 'disable':
-				bot.disableCommand(_match.group('command'))
-				self.OK(bot,query)
-				bot.log("%(who)s disabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
-				return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
-			elif _match.group('method').lower() == 'enable':
-				bot.enableCommand(_match.group('command'))
-				self.OK(bot,query)
-				bot.log("%(who)s enabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
-				return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
-			else:
-				return {'handled':False}
-		else:
-			return {'handled':False}
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				if _match.group('method').lower() == 'disable':
+					bot.disableCommand(_match.group('command'))
+					self.OK(bot,query)
+					bot.log("%(who)s disabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
+					return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
+				elif _match.group('method').lower() == 'enable':
+					bot.enableCommand(_match.group('command'))
+					self.OK(bot,query)
+					bot.log("%(who)s enabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
+					return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
+				else:
+					return {'handled':False}
+		return {'handled':False}
 			
 	def RequireAdmin(self):
 		return True
@@ -55,16 +66,17 @@ class JoinPartCommand(BotCommand):
 		
 	def Try(self,bot,query):
 		c=bot.connection
-		_match = self._rx.match(query.Message())
-		if query.Directed() and _match:
-			if _match.group('mode') == "join":
-				bot.connection.join(_match.group('channel'))
-			else:
-				bot.connection.part(_match.group('channel'))
-			self.OK(bot,query)
-			resp={'handled':True,'debug':'%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()}}
-			bot.log(resp['debug'])
-			return resp
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				if _match.group('mode') == "join":
+					bot.connection.join(_match.group('channel'))
+				else:
+					bot.connection.part(_match.group('channel'))
+				self.OK(bot,query)
+				resp={'handled':True,'debug':'%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()}}
+				bot.log(resp['debug'])
+				return resp
 		return {'handled':False}
 		
 class TestCommand(BotCommand):
@@ -82,12 +94,12 @@ class AdminTest(BotCommand):
 		
 	def Try(self,bot,query):
 		c = bot.connection
-		_match = self._rx.match(query.Message())
-		if query.Directed() and _match:
-			c.privmsg(query.RespondTo(),"You are an admin, %(who)s"%{'who':query.From()})
-			return {'handled':True,'debug':'admintest: admin test command'}
-		else:
-			return {'handled':False}
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				c.privmsg(query.RespondTo(),"You are an admin, %(who)s"%{'who':query.From()})
+				return {'handled':True,'debug':'admintest: admin test command'}
+		return {'handled':False}
 		
 	def RequiresAdmin(self):
 		return True
@@ -127,12 +139,15 @@ class Pail(SingleServerIRCBot):
 		#self.channel = channel
 		self._db = False
 		self._connectDB()
+		
+		self._lastDebug = {}
 
 		self.commands = {
 			'test':TestCommand(),
 			'admintest':AdminTest(),
 			'commandmodechange':CommandModeChange(),
 			'joinpartcommand':JoinPartCommand(),
+			'lastdebucCommand':LastDebugCommand()
 		}
 		
 		modules = [factoids,variables]
@@ -168,11 +183,13 @@ class Pail(SingleServerIRCBot):
 		
 	def processQuery(self, query):
 		if not nm_to_n(query.From()) in config('ignore'):
-			for cmd in self.commands.values():
+			for cmds in self.commands:
+				cmd = self.commands[cmds]
 				if (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin():
 					result = cmd.Try(self,query)
 					if result['handled']:
-						self._lastDebug = result['debug']
+						if 'debug' in result:
+							self._lastDebug = {'message':result['debug'],'source':cmds}
 						self._db.commit()
 						break
 	
