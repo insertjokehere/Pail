@@ -205,7 +205,8 @@ class Pail(SingleServerIRCBot):
 					if result['handled']:
 						if 'debug' in result:
 							self._lastDebug = {'message':result['debug'],'source':cmds}
-						self._db.commit()
+						if not self._db is None:
+							self._db.commit()
 						handled = True
 						break
 			if not handled and query.Directed():
