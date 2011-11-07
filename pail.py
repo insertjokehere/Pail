@@ -131,11 +131,10 @@ class LookupVar(BotCommand):
 				
 
 class DeleteCommand(BotCommand):
-	def __init__(self, regex, type, table, keyname,clearcachefunction):
+	def __init__(self, regex, type, table,clearcachefunction):
 		self._rx=re.compile(regex,re.IGNORECASE)
 		self._type=type
 		self._table=table
-		self._keyname = keyname
 		self._clearCache = clearcachefunction
 	
 	def Try(self,bot,query):
@@ -145,7 +144,7 @@ class DeleteCommand(BotCommand):
 				cursor = bot.db()
 				if _match.group('id')[0] == "#": #delete by id number, otherwise by key
 					id=_match.group('id')[1:]
-					cursor.execute('select %(keyname)s,protected from %(table)s where id=%%s'%{'keyname':self._keyname,'table':self._table},(id))
+					cursor.execute('select name,protected from %(table)s where id=%%s'%{'table':self._table},(id))
 					entry = tuppleToList(['key','protected'],cursor.fetchall())[0] #id is the primary key, so there will only be one tupple returned
 					if (entry['protected']==1 and isAdmin(query.From())) or entry['protected'] == 0:
 						self._clearCache(bot,entry['key'])
@@ -158,7 +157,7 @@ class DeleteCommand(BotCommand):
 						resp = {'handled':True,'debug':'%(who)s attempted to delete protected %(type)s #%(num)s'%{'who':query.From(),'num':id,'type':self._type}}
 				elif isAdmin(query.From()): #batch delete, requires admin
 					key=_match.group('id')
-					cursor.execute('delete from %(table)s where %(keyname)s=%%s'%{'table':self._table,'keyname': self._keyname},(key))
+					cursor.execute('delete from %(table)s where name=%%s'%{'table':self._table},(key))
 					cursor.close()
 					self.OK(bot,query)
 					resp={'handled':True,'debug':"deleted %(type)s '%(key)s' for %(who)s"%{'type':self._type,'who':query.From(),'key':key}}
@@ -171,14 +170,14 @@ class DeleteCommand(BotCommand):
 
 class DeleteFactoid(DeleteCommand):
 	def __init__(self):
-		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>#(\d+)|([^@$%]+))",'factoid','bucket_facts','triggerkey',self._clearCache)
+		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>#(\d+)|([^@$%]+))",'factoid','bucket_facts',self._clearCache)
 		
 	def _clearCache(self,bot,key):
 		bot.getCommand('factoidtrigger').clearCache(key)
 		
 class DeleteVariable(DeleteCommand):
 	def __init__(self):
-		DeleteCommand.__init__(self,r"(forget|delete)\s+var(iable)?\s+(?P<id>#(\d+)|(\w+))",'variable','bucket_vars','name',self._clearCache)
+		DeleteCommand.__init__(self,r"(forget|delete)\s+var(iable)?\s+(?P<id>#(\d+)|(\w+))",'variable','bucket_vars',self._clearCache)
 	
 	def _clearCache(self,bot,key):
 		bot.getCommand('lookupvar').clearCache(key)
@@ -221,8 +220,9 @@ class FactoidTrigger(BotCommand):
 			isCached = True
 		else:
 			cursor = bot.db()
-			cursor.execute('select triggerkey,method,response,id from bucket_facts where triggerkey=%s;',(query.Message()))
-			facts = tuppleToList(['triggerkey','method','response','id'],cursor.fetchall())
+			print query.Message()
+			cursor.execute('select name,method,response,id from bucket_facts where name=%s;',(query.Message()))
+			facts = tuppleToList(['key','method','response','id'],cursor.fetchall())
 			cursor.close()
 		if len(facts) > 0:
 			self._cache[query.Message()] = facts
@@ -234,8 +234,8 @@ class FactoidTrigger(BotCommand):
 			elif fact['method'] == 'action':
 				c.action(query.RespondTo(),message)
 			else:
-				c.privmsg(query.RespondTo(),"%(key)s %(method)s %(response)s"%{'key':fact['triggerkey'],'method':fact['method'],'response':message})
-			resp = {'handled':True,'debug':"#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['triggerkey'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached}}
+				c.privmsg(query.RespondTo(),"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message})
+			resp = {'handled':True,'debug':"#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached}}
 			bot.log(resp['debug'])
 			return resp
 		else:
@@ -261,7 +261,7 @@ class TeachFactoid(BotCommand):
 				method = _match.group('method').strip()
 				response = _match.group('response').strip()
 				cursor = bot.db()
-				cursor.execute(r"insert into bucket_facts (triggerkey,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
+				cursor.execute(r"insert into bucket_facts (name,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
 				cursor.close()
 				bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 				self.OK(bot,query)
