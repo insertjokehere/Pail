@@ -29,8 +29,8 @@ class LastDebugCommand(BotCommand):
 			_match = self._rx.match(query.Message())
 			if _match:
 				bot.connection.privmsg(query.RespondTo(),"That was: (%(lastsource)s) '%(lastmessage)s'"%{'lastmessage':bot._lastDebug['message'],'lastsource':bot._lastDebug['source']})
-				return {'handled':True}
-		return {'handled':False}
+				return self.Handled()
+		return self.Unhandled()
 		
 class CommandModeChange(BotCommand):
 	def __init__(self):
@@ -45,15 +45,15 @@ class CommandModeChange(BotCommand):
 					bot.disableCommand(_match.group('command'))
 					self.OK(bot,query)
 					bot.log("%(who)s disabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
-					return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
+					return self.Handled('commandmodechange: enable/disable a command')
 				elif _match.group('method').lower() == 'enable':
 					bot.enableCommand(_match.group('command'))
 					self.OK(bot,query)
 					bot.log("%(who)s enabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
-					return {'handled':True,'debug':'commandmodechange: enable/disable a command'}
+					return self.Handled('commandmodechange: enable/disable a command')
 				else:
-					return {'handled':False}
-		return {'handled':False}
+					return self.Unhandled()
+		return self.Unhandled()
 			
 	def RequireAdmin(self):
 		return True
@@ -75,19 +75,19 @@ class JoinPartCommand(BotCommand):
 				else:
 					bot.connection.part(_match.group('channel'))
 				self.OK(bot,query)
-				resp={'handled':True,'debug':'%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()}}
+				resp=self.Handled('%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()})
 				bot.log(resp['debug'])
 				return resp
-		return {'handled':False}
+		return self.Unhandled()
 		
 class TestCommand(BotCommand):
 	def Try(self, bot, query):
 		c = bot.connection
 		if query.Directed() and query.Message().lower() == 'test':
 			c.privmsg(query.RespondTo(),query.Message())
-			return {'handled':True,'debug':'test: test command'}
+			return self.Handled('test: test command')
 		else:
-			return {'handled':False}
+			return self.Unhandled()
 
 class AdminTest(BotCommand):
 	def __init__(self):
@@ -99,8 +99,8 @@ class AdminTest(BotCommand):
 			_match = self._rx.match(query.Message())
 			if _match:
 				c.privmsg(query.RespondTo(),"You are an admin, %(who)s"%{'who':nm_to_n(query.From())})
-				return {'handled':True,'debug':'admintest: admin test command'}
-		return {'handled':False}
+				return self.Handled('admintest: admin test command')
+		return self.Unhandled()
 		
 	def RequiresAdmin(self):
 		return True

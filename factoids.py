@@ -37,11 +37,11 @@ class FactoidTrigger(BotCommand):
 		if len(facts) > 0:
 			self._cache[query.Message()] = facts
 			fact = self.sayFactoid(facts,bot,query)
-			resp = {'handled':True,'debug':"#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached}}
+			resp = self.Handled("#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached})
 			bot.log(resp['debug'])
 			return resp
 		else:
-			return {'handled':False}
+			return self.Unhandled()
 	
 	def clearCache(self, key=""):
 		if key=="":
@@ -80,8 +80,8 @@ class TeachFactoid(BotCommand):
 				bot.sql(r"insert into bucket_facts (name,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
 				bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 				self.OK(bot,query)
-				resp = {'handled':True,'debug':"%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':key,'method':method,'response':response,'who':query.From()}}
+				resp = self.Handled("%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':key,'method':method,'response':response,'who':query.From()})
 				bot.log(resp['debug'])
 				return resp
-		return {'handled':False}
+		return self.Unhandled()
 		

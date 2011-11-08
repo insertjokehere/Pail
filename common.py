@@ -55,11 +55,17 @@ class BotCommand:
 		return True
 		
 	def Try(self, bot, query):
-		return {'handled':False}
+		return self.Unhandled()
 
 	def OK(self,bot,query):
 		c=bot.connection
 		c.privmsg(query.RespondTo(),"Ok, %(who)s" % {'who':nm_to_n(query.From())})
+	
+	def Unhandled(self):
+		return {'handled':False}
+		
+	def Handled(self,debug=""):
+		return {'handled':True,'debug':debug}
 
 class DeleteCommand(BotCommand):
 	def __init__(self, regex, type, table,clearcachefunction):
@@ -79,22 +85,22 @@ class DeleteCommand(BotCommand):
 						self._clearCache(bot,entry['key'])
 						bot.sql(r'delete from %(table)s where id=%%s'%{'table':self._table},(id))
 						self.OK(bot,query)
-						resp = {'handled':True,'debug':'deleted %(type)s #%(num)s for %(who)s'%{'type':self._type,'num':id,'who':nm_to_n(query.From())}}
+						resp = self.Handled('deleted %(type)s #%(num)s for %(who)s'%{'type':self._type,'num':id,'who':nm_to_n(query.From())})
 					else:
 						bot.connection.privmsg(query.RespondTo(),"Sorry %(who)s, that %(type)s is protected"%{'who':nm_to_n(query.From()),'type':self._type})
-						resp = {'handled':True,'debug':'%(who)s attempted to delete protected %(type)s #%(num)s'%{'who':query.From(),'num':id,'type':self._type}}
+						resp = self.Handled('%(who)s attempted to delete protected %(type)s #%(num)s'%{'who':query.From(),'num':id,'type':self._type})
 				elif isAdmin(query.From()): #batch delete, requires admin
 					key=_match.group('id')
 					cursor.execute('delete from %(table)s where name=%%s'%{'table':self._table},(key))
 					cursor.close()
 					self.OK(bot,query)
-					resp={'handled':True,'debug':"deleted %(type)s '%(key)s' for %(who)s"%{'type':self._type,'who':query.From(),'key':key}}
+					resp=self.Handled("deleted %(type)s '%(key)s' for %(who)s"%{'type':self._type,'who':query.From(),'key':key})
 				else:
 					bot.connection.privmsg(query.RespondTo(),"Sorry %(who)s, you need to be an admin to do that"%{'who':nm_to_n(query.From())})
-					resp = {'handled':True,'debug':"%(who)s attempted to batch delete factoid '%(key)s'"%{'who':query.From(),'key':key}}
+					resp = self.Handled("%(who)s attempted to batch delete factoid '%(key)s'"%{'who':query.From(),'key':key})
 				bot.log(resp['debug'])
 				return resp
-		return {'handled':False}
+		return self.Unhandled()
 
 class ProtectCommand(BotCommand):
 	def __init__(self, name, regex, table):
@@ -116,13 +122,13 @@ class ProtectCommand(BotCommand):
 				if _match.group('key').startswith('#'):
 					key='id'
 					id=_match.group('key')[1:]
-					resp = {'handled':True,'debug':"%(who)s %(mode)sed %(type)s #%(id)s"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id}}
+					resp = self.Handled("%(who)s %(mode)sed %(type)s #%(id)s"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id})
 				else:
 					key='name'
 					id = _match.group('key')
-					resp = {'handled':True,'debug':"%(who)s batch %(mode)sed %(type)s '%(id)s'"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id}}
+					resp = self.Handled("%(who)s batch %(mode)sed %(type)s '%(id)s'"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id})
 				bot.sql(r'update %(table)s set protected=%%s where %(key)s=%%s'%{'table':self._table,'key':key},(mode,id))
 				self.OK(bot,query)
 				bot.log(resp['debug'])
 				return resp
-		return {'handled':False}
+		return self.Unhandled()

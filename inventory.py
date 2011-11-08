@@ -82,11 +82,11 @@ class ForgetItem(BotCommand):
 					giveitem._fillInventory(bot)
 				itemname = _match.group('itemname')
 				giveitem.ForgetItem(itemname,bot)
-				resp = {'handled':True,'debug':'forgot item %(item)s for %(who)s'%{'item':itemname,'who':nm_to_n(query.From())}}
+				resp = self.Handled('forgot item %(item)s for %(who)s'%{'item':itemname,'who':nm_to_n(query.From())})
 				self.OK(bot,query)
 				bot.log(resp['debug'])
 				return resp
-		return {'handled':False}
+		return self.Unhandled()
 		
 	def RequiresAdmin(self):
 		return True
@@ -109,14 +109,14 @@ class DropItem(BotCommand):
 				elif itemname in giveitem._items:
 					item = giveitem._items[itemname]
 				else:
-					return {'handled':False}
+					return self.Unhandled()
 				giveitem.DropItem(itemname)
 				f = pickOne(giveitem._takeItemFactoid)
 				bot.getCommand('factoidtrigger').sayFactoid(giveitem._processFactoid(f,item),bot,query)
-				resp = {'handled':True,'debug':'Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())}}
+				resp = self.Handled('Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())})
 				bot.log(resp['debug'])
 				return resp
-		return {'handled':False}
+		return self.Unhandled()
 		
 class GiveItem(BotCommand):
 	def __init__(self):
@@ -170,7 +170,7 @@ class GiveItem(BotCommand):
 		elif query.IsAction():
 			rx = self._rx_action
 		else:
-			return {'handled':False}
+			return self.Unhandled()
 		for m in rx:
 			_match = m.match(query.Message())
 			if not _match is None:
@@ -193,10 +193,10 @@ class GiveItem(BotCommand):
 				self.TakeItem(item,bot)
 			print self._processFactoid(f,item)
 			bot.getCommand('factoidtrigger').sayFactoid(self._processFactoid(f,item),bot,query)
-			resp = {'handled':True,'debug':'Got %(particle)s %(item)s from %(who)s'%{'item':item['name'],'who':nm_to_n(query.From()),'particle':item['particle']}}
+			resp = self.Handled('Got %(particle)s %(item)s from %(who)s'%{'item':item['name'],'who':nm_to_n(query.From()),'particle':item['particle']})
 			bot.log(resp['debug'])
 			return resp
-		return {'handled':False}
+		return self.Unhandled()
 	
 	
 	def IgnoreActions(self):
@@ -229,6 +229,7 @@ class GiveItem(BotCommand):
 		bot.sql(r"insert into bucket_items (name,owner,particle) values (%s,%s,%s);",(item['name'],item['owner'],item['particle']))
 	
 	def DropItem(self, itemName):
+		#todo: pick up a random item if len(_items) drops below minItems
 		if self.HasItem(itemName):
 			del self._items[itemName]
 	
