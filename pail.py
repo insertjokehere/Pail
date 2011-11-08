@@ -97,7 +97,7 @@ class AdminTest(BotCommand):
 		if query.Directed():
 			_match = self._rx.match(query.Message())
 			if _match:
-				c.privmsg(query.RespondTo(),"You are an admin, %(who)s"%{'who':query.From()})
+				c.privmsg(query.RespondTo(),"You are an admin, %(who)s"%{'who':nm_to_n(query.From())})
 				return {'handled':True,'debug':'admintest: admin test command'}
 		return {'handled':False}
 		
