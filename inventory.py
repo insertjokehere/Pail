@@ -7,7 +7,8 @@ class Factory(CommandModuleFactory):
 	def Commands(self):
 		return {
 			'giveitem':GiveItem(),
-			'dropitem':DropItem()
+			'dropitem':DropItem(),
+			'forgetitem':ForgetItem()
 		}
 	
 	def Exports(self):
@@ -68,9 +69,31 @@ class Factory(CommandModuleFactory):
 		else:
 			return item['particle']+" "+item['name']
 
+class ForgetItem(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r'(forget|delete)\sitem\s((?P<particle>a|an|this|some|lots of)\s)?(?P<itemname>.+)',re.IGNORECASE)
+		
+	def Try(self,bot,query):
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				giveitem = bot.getCommand('giveitem')
+				if giveitem._items is None:
+					giveitem._fillInventory(bot)
+				itemname = _match.group('itemname')
+				giveitem.ForgetItem(itemname,bot)
+				resp = {'handled':True,'debug':'forgot item %(item)s for %(who)s'%{'item':itemname,'who':nm_to_n(query.From())}}
+				self.OK(bot,query)
+				bot.log(resp['debug'])
+				return resp
+		return {'handled':False}
+		
+	def RequiresAdmin(self):
+		return True
+	
 class DropItem(BotCommand):
 	def __init__(self):
-		self._rx = re.compile(r"drop\s(item\s)?(?P<itemname>something|.+)",re.IGNORECASE)
+		self._rx = re.compile(r"drop\s(item\s)?((?P<particle>a|an|this|some|lots of)\s)?(?P<itemname>something|.+)",re.IGNORECASE)
 	
 	def Try(self,bot,query):
 		if query.Directed():
@@ -85,6 +108,8 @@ class DropItem(BotCommand):
 					item = pickOne(giveitem._items.values())
 				elif itemname in giveitem._items:
 					item = giveitem._items[itemname]
+				else:
+					return {'handled':False}
 				giveitem.DropItem(itemname)
 				f = pickOne(giveitem._takeItemFactoid)
 				bot.getCommand('factoidtrigger').sayFactoid(giveitem._processFactoid(f,item),bot,query)
@@ -208,10 +233,10 @@ class GiveItem(BotCommand):
 			del self._items[itemName]
 	
 	def ForgetItem(self, itemName, bot):
-		self._DropItem(itemName)
+		self.DropItem(itemName)
 		if itemName in self._itemsCache.keys():
 			del self._itemsCache[itemName]
-		bot.sql(r"delete from bucket_items where name=%s",(item['name']))
+		bot.sql(r"delete from bucket_items where name=%s",(itemName))
 		
 	def _processFactoid(self, fact, item):
 		f = copy.copy(fact)

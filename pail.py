@@ -119,7 +119,6 @@ class IrcQuery:
 		else:
 			self._messagetext = messagetext.strip()
 			self._directed = directed
-		print self.Message()
 	
 	def Message(self):
 		return self._messagetext
