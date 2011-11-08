@@ -2,13 +2,14 @@ from common import *
 import re
 import random
 
-def Factory():
-	return {
-		'deletevariable':DeleteVariable(),
-		'protectvariable':ProtectVariable(),
-		'addvar':AddVar(),
-		'lookupvar':LookupVar()
-	}
+class Factory(CommandModuleFactory):
+	def Commands(self):
+		return {
+			'deletevariable':DeleteVariable(),
+			'protectvariable':ProtectVariable(),
+			'addvar':AddVar(),
+			'lookupvar':LookupVar()
+		}
 
 class DeleteVariable(DeleteCommand):
 	def __init__(self):
@@ -48,6 +49,7 @@ class LookupVar(BotCommand):
 			'someone':self._someone,
 			'op':self._admin
 		}
+		self._vars = None
 		self._rx_find = re.compile(r'\$(\w+)',re.IGNORECASE)
 		self._rx = re.compile(r'(what is|show) var(iable)? \$?(?P<varname>\w+)\??',re.IGNORECASE)
 	
@@ -101,15 +103,20 @@ class LookupVar(BotCommand):
 			self._bot = bot
 			self._query = query
 			self._parent = parent
+			
+			if parent._vars is None:
+				parent._vars = parent._internalVars
+				for v in bot.getExport('builtinvar'):
+					parent._vars = dict(parent._vars.items() + v.items())
 	
 		def _replace(self,_match):
 			varname = _match.group(1)
-			if varname in self._parent._internalVars:
-				return self._parent._internalVars[varname](self._bot,self._query)
+			if varname in self._parent._vars:
+				return self._parent._vars[varname](self._bot,self._query)
 			elif varname in self._parent._cache:
 				return self._parent._cache[varname][random.randint(0,len(self._parent._cache[varname])-1)]['value']
 			else:
-				var = bot.sql(r"select value,id from bucket_vars where name=%s",(varname.lower()),['value','id'])
+				vars = self._bot.sql(r"select value,id from bucket_vars where name=%s",(varname.lower()),['value','id'])
 				if len(vars)>0:
 					self._parent._cache[varname]=vars
 					return self._parent._cache[varname][random.randint(0,len(self._parent._cache[varname])-1)]['value']

@@ -2,14 +2,15 @@ from common import *
 import re
 import random
 
-def Factory():
-	return {
-		'deletefactoid':DeleteFactoid(),
-		'protectfactoid':ProtectFactoid(),
-		'factoidtrigger':FactoidTrigger(),
-		'teachfactoid':TeachFactoid()
-	}
-
+class Factory(CommandModuleFactory):
+	def Commands(self):
+		return {
+			'deletefactoid':DeleteFactoid(),
+			'protectfactoid':ProtectFactoid(),
+			'factoidtrigger':FactoidTrigger(),
+			'teachfactoid':TeachFactoid()
+		}
+		
 class DeleteFactoid(DeleteCommand):
 	def __init__(self):
 		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>(#\d+)|([^@$%]+))",'factoid','bucket_facts',self._clearCache)

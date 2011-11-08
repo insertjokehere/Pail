@@ -36,6 +36,13 @@ def tuppleToList(names,tupple):
 		list.append(m)
 	return list
 
+class CommandModuleFactory:
+	def Commands(self):
+		return {}
+	
+	def Exports(self):
+		return {}
+		
 class BotCommand:
 	def RequiresAdmin(self):
 		return False

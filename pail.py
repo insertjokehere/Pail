@@ -164,10 +164,17 @@ class Pail(SingleServerIRCBot):
 			'lastdebucCommand':LastDebugCommand()
 		}
 		
-		
+		self.exports = {}
 		
 		for m in modules:
-			self.commands = dict(self.commands.items() + m.Factory().items())
+			f = m.Factory()
+			self.commands = dict(self.commands.items() + f.Commands().items())
+			exp = f.Exports()
+			for k in exp:
+				if k in self.exports:
+					self.exports[k].extend(exp[k])
+				else:
+					self.exports[k] = exp[k]
 		
 		self.disabledCommands = {}
 		
@@ -225,6 +232,12 @@ class Pail(SingleServerIRCBot):
 			return self.commands[command]
 		else:
 			return self.disabledCommands[command]
+	
+	def getExport(self, name):
+		if name in self.exports:
+			return self.exports[name]
+		else:
+			return []
 	
 	def _connectDB(self):
 		self._db = MySQLdb.connect(host=config('dbHost'),user=config('dbUser'),passwd=config('dbPass'),db=config('dbDB'))
