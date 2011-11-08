@@ -27,14 +27,21 @@ class Factory(CommandModuleFactory):
 			it = items[i]
 			print it
 			r = random.randint(0,10)
-			if r == 0:
+			if r == 0 and not it['particle'] is None:
 				text += it['particle']+" "+it['name']+" from "+it['owner']+", "
+			elif r==0:
+				text += it['name']+" from "+it['owner']+", "
 			elif r == 1 and it['particle']=='this' or it['particle']=='lots of':
+				text += it['name']+", "
+			elif it['particle'] is None:
 				text += it['name']+", "
 			else:
 				text += it['particle']+" "+it['name']+", "
 		it = items[-1]
-		text += "and " + it['particle']+" "+it['name']
+		if it['particle'] is None:
+			text += "and " + it['name']
+		else:
+			text += "and " + it['particle']+" "+it['name']
 		return text
 	
 	def _item(self,bot,query):
@@ -43,7 +50,10 @@ class Factory(CommandModuleFactory):
 	
 	def _aitem(self,bot,query):
 		item = pickOne(bot.getCommand('giveitem')._items.values())
-		return item['particle']+" "+item['name']
+		if item['particle'] is None:
+			return item['name']
+		else:
+			return item['particle']+" "+item['name']
 		
 	def _giveitem(self,bot,query):
 		item = pickOne(bot.getCommand('giveitem')._items.values())
@@ -53,7 +63,10 @@ class Factory(CommandModuleFactory):
 	def _agiveitem(self,bot,query):
 		item = pickOne(bot.getCommand('giveitem')._items.values())
 		bot.getCommand('giveitem').DropItem(item['name'])
-		return item['particle']+" "+item['name']
+		if item['particle'] is None:
+			return item['name']
+		else:
+			return item['particle']+" "+item['name']
 		
 class GiveItem(BotCommand):
 	def __init__(self):
@@ -114,7 +127,7 @@ class GiveItem(BotCommand):
 				break
 		if _match:
 			if _match.group('particle') == '':
-				particle = "a"
+				particle = ""
 			else:
 				particle = _match.group('particle')
 			item = {'name': _match.group('item'),
@@ -178,6 +191,9 @@ class GiveItem(BotCommand):
 		
 	def _processFactoid(self, fact, item):
 		f = copy.copy(fact)
-		f['response'] = f['response'].replace('$aitem',item['particle']+" "+item['name'])
+		if item['particle'] is None:
+			f['response'] = f['response'].replace('$aitem',item['name'])
+		else:
+			f['response'] = f['response'].replace('$aitem',item['particle']+" "+item['name'])
 		f['response'] = f['response'].replace('$item',item['name'])
 		return f
