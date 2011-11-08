@@ -18,6 +18,7 @@ import sys
 from common import *
 import factoids
 import variables
+import inventory
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -107,16 +108,18 @@ class AdminTest(BotCommand):
 
 	
 class IrcQuery:
-	def __init__(self,fromuser,respondto,messagetext,channel="",directed=False):
+	def __init__(self,fromuser,respondto,messagetext,channel="",directed=False,isAction=False):
 		self._from = fromuser
 		self._respondto = respondto
 		self._channel = channel
-		if messagetext.lower().startswith(config('nickname').lower()+": "):
+		self._IsAction = isAction
+		if messagetext.lower().startswith(config('nickname').lower()+": ") or messagetext.lower().startswith(config('nickname').lower()+", "):
 			self._messagetext = messagetext[len(config('nickname'))+2:].strip()
 			self._directed = True
 		else:
 			self._messagetext = messagetext.strip()
 			self._directed = directed
+		print self.Message()
 	
 	def Message(self):
 		return self._messagetext
@@ -132,6 +135,9 @@ class IrcQuery:
 		
 	def Channel(self):
 		return self._channel
+	
+	def IsAction(self):
+		return self._IsAction
 
 class Pail(SingleServerIRCBot):
 	def __init__(self, nickname, server, port=6667):
@@ -139,7 +145,7 @@ class Pail(SingleServerIRCBot):
 		#self.channel = channel
 		self._db = None
 		
-		modules = [factoids,variables]
+		modules = [factoids,variables,inventory]
 		
 		self._lastDebug = {}
 		
@@ -181,6 +187,10 @@ class Pail(SingleServerIRCBot):
 		for c in config('disabledCommands'):
 			self.disableCommand(c)
 
+	def on_action(self, c,e):
+		q=IrcQuery(e.source(),e.target(),e.arguments()[0],isAction=True)
+		self.processQuery(q)
+		
 	def on_nicknameinuse(self, c, e):
 		c.nick(c.get_nickname() + "_")
 
@@ -189,7 +199,7 @@ class Pail(SingleServerIRCBot):
 			self.connection.join(ch)
 
 	def on_privmsg(self, c, e):
-		q = IrcQuery(e.source(),e.source(),e.arguments()[0],True)
+		q = IrcQuery(e.source(),e.source(),e.arguments()[0],directed=True)
 		self.processQuery(q)
 
 	def on_pubmsg(self, c, e):
@@ -207,7 +217,9 @@ class Pail(SingleServerIRCBot):
 			handled = False
 			for cmds in self.commands:
 				cmd = self.commands[cmds]
-				if (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin():
+				adminCheck = (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin() #true if the admin requirements are met
+				actionCheck = not(cmd.IgnoreActions() and query.IsAction()) #check if the action requirements are met
+				if adminCheck and actionCheck:
 					result = cmd.Try(self,query)
 					if result['handled']:
 						if 'debug' in result:

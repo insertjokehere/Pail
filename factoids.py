@@ -54,7 +54,7 @@ class FactoidTrigger(BotCommand):
 		if type(facts) is dict:
 			fact = facts
 		else:
-			fact = facts[random.randint(0,len(facts)-1)]
+			fact = pickOne(facts)
 		message = bot.getCommand('lookupvar').replaceVars(bot,query,fact['response'])
 		if fact['method']== 'reply':
 			c.privmsg(query.RespondTo(),message)

@@ -6,6 +6,10 @@ import random
 _config = {}
 _configfile = ""	
 
+def pickOne(list):
+	r = random.randint(0,len(list)-1)
+	return list[r]
+
 def config(key):
 	return _config[key]
 
@@ -46,6 +50,9 @@ class CommandModuleFactory:
 class BotCommand:
 	def RequiresAdmin(self):
 		return False
+	
+	def IgnoreActions(self):
+		return True
 		
 	def Try(self, bot, query):
 		return {'handled':False}

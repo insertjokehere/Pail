@@ -80,19 +80,19 @@ class LookupVar(BotCommand):
 			del self._cache[name]
 			
 	def _admin(self,bot,query):
-		return config('admins')[random.randint(0,len(config('admins'))-1)]
+		return pickOne(config('admins'))
 	
 	def _who(self,bot,query):
 		return nm_to_n(query.From())
 	
 	def _someone(self,bot,query):
-		users = bot.channels[query.Channel()].users()
+		users = bot.channels[query.Channel()].users()[:]
 		for u in config('ignore'):
 			if u in users:
 				users.remove(u)
 		if config('nickname') in users:
 			users.remove(config('nickname'))
-		return users[random.randint(0,len(users)-1)]
+		return pickOne(users)
 	
 	def replaceVars(self,bot,query,message):
 		return self._rx_find.sub(self._replacer(bot,query,self)._replace,message)
@@ -114,12 +114,12 @@ class LookupVar(BotCommand):
 			if varname in self._parent._vars:
 				return self._parent._vars[varname](self._bot,self._query)
 			elif varname in self._parent._cache:
-				return self._parent._cache[varname][random.randint(0,len(self._parent._cache[varname])-1)]['value']
+				return pickOne(self._parent._cache[varname])['value']
 			else:
 				vars = self._bot.sql(r"select value,id from bucket_vars where name=%s",(varname.lower()),['value','id'])
 				if len(vars)>0:
 					self._parent._cache[varname]=vars
-					return self._parent._cache[varname][random.randint(0,len(self._parent._cache[varname])-1)]['value']
+					return pickOne(self._parent._cache[varname])['value']
 				else:
 					return varname
 
