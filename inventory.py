@@ -6,7 +6,8 @@ import copy
 class Factory(CommandModuleFactory):
 	def Commands(self):
 		return {
-			'giveitem':GiveItem()
+			'giveitem':GiveItem(),
+			'dropitem':DropItem()
 		}
 	
 	def Exports(self):
@@ -25,7 +26,6 @@ class Factory(CommandModuleFactory):
 		text = ""
 		for i in range(0,len(items)-1):
 			it = items[i]
-			print it
 			r = random.randint(0,10)
 			if r == 0 and not it['particle'] is None:
 				text += it['particle']+" "+it['name']+" from "+it['owner']+", "
@@ -67,6 +67,31 @@ class Factory(CommandModuleFactory):
 			return item['name']
 		else:
 			return item['particle']+" "+item['name']
+
+class DropItem(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r"drop\s(item\s)?(?P<itemname>something|.+)",re.IGNORECASE)
+	
+	def Try(self,bot,query):
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				giveitem = bot.getCommand('giveitem')
+				#todo: wrap this behavior in GiveItem
+				if giveitem._items is None:
+					giveitem._fillInventory(bot)
+				itemname = _match.group('itemname')
+				if itemname=="something":
+					item = pickOne(giveitem._items.values())
+				elif itemname in giveitem._items:
+					item = giveitem._items[itemname]
+				giveitem.DropItem(itemname)
+				f = pickOne(giveitem._takeItemFactoid)
+				bot.getCommand('factoidtrigger').sayFactoid(giveitem._processFactoid(f,item),bot,query)
+				resp = {'handled':True,'debug':'Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())}}
+				bot.log(resp['debug'])
+				return resp
+		return {'handled':False}
 		
 class GiveItem(BotCommand):
 	def __init__(self):
@@ -169,7 +194,6 @@ class GiveItem(BotCommand):
 						break
 		else:
 			self._items = self._itemsCache.values()[:]
-				
 				
 	def HasItem(self, itemName):
 		return itemName in self._items.keys()
