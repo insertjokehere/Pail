@@ -19,6 +19,7 @@ import factoids
 import variables
 import inventory
 import cfg
+import randomness
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -144,7 +145,7 @@ class Pail(SingleServerIRCBot):
 		#self.channel = channel
 		self._db = None
 		
-		modules = [factoids,variables,inventory]
+		modules = [factoids,variables,inventory,randomness]
 		
 		self._lastDebug = {}
 		
@@ -191,6 +192,8 @@ class Pail(SingleServerIRCBot):
 		
 		for m in modules:
 			f = m.Factory(self)
+			for i in f.Defaults().items():
+				cfg.config.setDefault(i[0],i[1])
 			self.commands = dict(self.commands.items() + f.Commands().items())
 			exp = f.Exports()
 			for k in exp:
@@ -198,8 +201,6 @@ class Pail(SingleServerIRCBot):
 					self.exports[k].extend(exp[k])
 				else:
 					self.exports[k] = exp[k]
-			for i in f.Defaults().items():
-				cfg.config.setDefault(i[0],i[1])
 			for i in f.TimerFunctions():
 				if not 'arguments' in i.keys():
 					args = ()
