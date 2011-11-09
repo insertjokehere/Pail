@@ -5,12 +5,17 @@ from cfg import *
 
 class Factory(CommandModuleFactory):
 	def Commands(self):
-		print config
 		return {
 			'deletevariable':DeleteVariable(),
 			'protectvariable':ProtectVariable(),
 			'addvar':AddVar(),
 			'lookupvar':LookupVar()
+		}
+		
+	def Defaults(self):
+		return {
+			"maxItems":8,
+			"initialItems":4
 		}
 
 class DeleteVariable(DeleteCommand):
@@ -82,18 +87,18 @@ class LookupVar(BotCommand):
 			del self._cache[name]
 			
 	def _admin(self,bot,query):
-		return pickOne(config['admins'])
+		return pickOne(cfg.config['admins'])
 	
 	def _who(self,bot,query):
 		return nm_to_n(query.From())
 	
 	def _someone(self,bot,query):
 		users = bot.channels[query.Channel()].users()[:]
-		for u in config['ignore']:
+		for u in cfg.config['ignore']:
 			if u in users:
 				users.remove(u)
-		if config['nickname'] in users:
-			users.remove(config['nickname'])
+		if cfg.config['nickname'] in users:
+			users.remove(cfg.config['nickname'])
 		return pickOne(users)
 	
 	def replaceVars(self,bot,query,message):

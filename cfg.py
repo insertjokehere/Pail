@@ -1,5 +1,7 @@
 import json
 
+config = None
+
 class Config:
 	
 	def __init__(self,file):

@@ -1,16 +1,12 @@
 {
-	"server":"server1.entirelyrandom.net",
+	"server":"localhost",
 	"port":6667,
 	"nickname":"pail",
-	"disabledCommands":[],
-	"admins":["Will"],
-	"logChannel":"#projectpail",
+	"admins":[],
+	"logChannel":"#pail-log",
 	"dbHost":"127.0.0.1",
 	"dbUser":"root",
 	"dbPass":"not-my-real-password",
-	"dbDB":"bucket",
-	"ignore":["raeith|bot"],
-	"channels":["#projectpail"],
-	"maxItems":8,
-	"initialItems":4
+	"dbDB":"pail",
+	"channels":["#pail","#pail-log"]
 }

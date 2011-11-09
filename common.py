@@ -1,10 +1,9 @@
 from irclib import nm_to_n
 import re
 import random
-from cfg import *
+import cfg
 
-global config
-config = None
+
 
 def pickOne(list):
 	r = random.randint(0,len(list)-1)
@@ -12,7 +11,7 @@ def pickOne(list):
 	
 def isAdmin(username):
 	global config
-	return nm_to_n(username) in config['admins']
+	return nm_to_n(username) in cfg.config['admins']
 
 def tuppleToList(names,tupple):
 	list = []
@@ -30,6 +29,9 @@ class CommandModuleFactory:
 		return {}
 	
 	def Exports(self):
+		return {}
+	
+	def Defaults(self):
 		return {}
 		
 class BotCommand:
