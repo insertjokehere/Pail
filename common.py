@@ -25,6 +25,9 @@ def tuppleToList(names,tupple):
 	return list
 
 class CommandModuleFactory:
+	def __init__(self,bot):
+		self._bot = bot
+		
 	def Commands(self):
 		return {}
 	
@@ -33,6 +36,9 @@ class CommandModuleFactory:
 	
 	def Defaults(self):
 		return {}
+	
+	def TimerFunctions(self):
+		return []
 		
 class BotCommand:
 	def RequiresAdmin(self):

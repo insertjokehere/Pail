@@ -22,6 +22,17 @@ class Factory(CommandModuleFactory):
 				}]
 		}
 	
+	def Defaults(self):
+		return {
+			"maxItems":8,
+			"initialItems":4,
+			"minItems":2
+		}
+	
+	def TimerFunctions(self):
+		return [{'interval':60*60*2, #2 hours
+				'function':self._refreshinventory}]
+	
 	def _inventory(self, bot, query):
 		items = bot.getCommand('giveitem')._items.values()
 		random.shuffle(items)
@@ -69,6 +80,10 @@ class Factory(CommandModuleFactory):
 			return item['name']
 		else:
 			return item['particle']+" "+item['name']
+		
+	def _refreshinventory(self,args):
+		self._bot.log("Refreshing item cache")
+		self._bot.getCommand('giveitem')._refreshItemCache(self._bot)
 
 class ForgetItem(BotCommand):
 	def __init__(self):
@@ -94,7 +109,7 @@ class ForgetItem(BotCommand):
 	
 class DropItem(BotCommand):
 	def __init__(self):
-		self._rx = re.compile(r"drop\s(item\s)?((?P<particle>a|an|this|some|lots of)\s)?(?P<itemname>something|.+)",re.IGNORECASE)
+		self._rx = re.compile(r"drop\s(item\s)?((?P<particle>a|an|this|some|lots of)\s)?(?P<itemname>.+)",re.IGNORECASE)
 	
 	def Try(self,bot,query):
 		if query.Directed():
@@ -111,7 +126,7 @@ class DropItem(BotCommand):
 					item = giveitem._items[itemname]
 				else:
 					return self.Unhandled()
-				giveitem.DropItem(itemname)
+				giveitem.DropItem(item['name'])
 				f = pickOne(giveitem._takeItemFactoid)
 				bot.getCommand('factoidtrigger').sayFactoid(giveitem._processFactoid(f,item),bot,query)
 				resp = self.Handled('Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())})
@@ -212,14 +227,17 @@ class GiveItem(BotCommand):
 		self._refreshItemCache(bot)
 		self._items={}
 		if len(self._itemsCache) > cfg.config['initialItems']:
-			for i in range(0,cfg.config['initialItems']):
+			self.GetRandomItem(cfg.config['initialItems'])
+		else:
+			self._items = self._itemsCache.values()[:]
+	
+	def GetRandomItem(self,count=1):
+		for i in range(0,count):
 				while True:
 					i = self._itemsCache.values()[random.randint(0,len(self._itemsCache)-1)]
 					if not self.HasItem(i['name']):
 						self._items[i['name']]=i
 						break
-		else:
-			self._items = self._itemsCache.values()[:]
 				
 	def HasItem(self, itemName):
 		return itemName in self._items.keys()
@@ -230,9 +248,10 @@ class GiveItem(BotCommand):
 		bot.sql(r"insert into bucket_items (name,owner,particle) values (%s,%s,%s);",(item['name'],item['owner'],item['particle']))
 	
 	def DropItem(self, itemName):
-		#todo: pick up a random item if len(_items) drops below minItems
 		if self.HasItem(itemName):
 			del self._items[itemName]
+		if len(self._items) < cfg.config['minItems']:
+			self.GetRandomItem()
 	
 	def ForgetItem(self, itemName, bot):
 		self.DropItem(itemName)

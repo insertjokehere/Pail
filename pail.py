@@ -190,7 +190,7 @@ class Pail(SingleServerIRCBot):
 			cfg.config.setDefault(i[0],i[1])
 		
 		for m in modules:
-			f = m.Factory()
+			f = m.Factory(self)
 			self.commands = dict(self.commands.items() + f.Commands().items())
 			exp = f.Exports()
 			for k in exp:
@@ -200,6 +200,12 @@ class Pail(SingleServerIRCBot):
 					self.exports[k] = exp[k]
 			for i in f.Defaults().items():
 				cfg.config.setDefault(i[0],i[1])
+			for i in f.TimerFunctions():
+				if not 'arguments' in i.keys():
+					args = ()
+				else:
+					args = i['arguments']
+				self.execute_every(i['interval'],i['function'],args)
 		
 		self.disabledCommands = {}
 		
@@ -294,6 +300,12 @@ class Pail(SingleServerIRCBot):
 			if not mapnames is None:
 				results = tuppleToList(mapnames,results)
 			return results
+	def execute_every(self,interval,function,arguments):
+		self.connection.execute_delayed(interval,self._execute_every,(interval,function,arguments))
+		
+	def _execute_every(self,interval,function,arguments):
+		if not function(arguments):
+			self.execute_every(interval,function,arguments)
 	
 	
 def main():	

@@ -11,12 +11,6 @@ class Factory(CommandModuleFactory):
 			'addvar':AddVar(),
 			'lookupvar':LookupVar()
 		}
-		
-	def Defaults(self):
-		return {
-			"maxItems":8,
-			"initialItems":4
-		}
 
 class DeleteVariable(DeleteCommand):
 	def __init__(self):
