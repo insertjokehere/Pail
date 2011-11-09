@@ -10,5 +10,7 @@
 	"dbPass":"not-my-real-password",
 	"dbDB":"bucket",
 	"ignore":["raeith|bot"],
-	"channels":["#projectpail"]
+	"channels":["#projectpail"],
+	"maxItems":8,
+	"initialItems":4
 }

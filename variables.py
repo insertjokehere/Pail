@@ -1,9 +1,11 @@
 from common import *
 import re
 import random
+from cfg import *
 
 class Factory(CommandModuleFactory):
 	def Commands(self):
+		print config
 		return {
 			'deletevariable':DeleteVariable(),
 			'protectvariable':ProtectVariable(),
@@ -80,18 +82,18 @@ class LookupVar(BotCommand):
 			del self._cache[name]
 			
 	def _admin(self,bot,query):
-		return pickOne(config('admins'))
+		return pickOne(config['admins'])
 	
 	def _who(self,bot,query):
 		return nm_to_n(query.From())
 	
 	def _someone(self,bot,query):
 		users = bot.channels[query.Channel()].users()[:]
-		for u in config('ignore'):
+		for u in config['ignore']:
 			if u in users:
 				users.remove(u)
-		if config('nickname') in users:
-			users.remove(config('nickname'))
+		if config['nickname'] in users:
+			users.remove(config['nickname'])
 		return pickOne(users)
 	
 	def replaceVars(self,bot,query,message):

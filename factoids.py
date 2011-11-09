@@ -1,9 +1,11 @@
 from common import *
 import re
 import random
+from cfg import *
 
 class Factory(CommandModuleFactory):
 	def Commands(self):
+		print config
 		return {
 			'deletefactoid':DeleteFactoid(),
 			'protectfactoid':ProtectFactoid(),

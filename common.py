@@ -1,33 +1,18 @@
 from irclib import nm_to_n
 import re
-import json
 import random
+from cfg import *
 
-_config = {}
-_configfile = ""	
+global config
+config = None
 
 def pickOne(list):
 	r = random.randint(0,len(list)-1)
 	return list[r]
-
-def config(key):
-	return _config[key]
-
-def loadConfig(file):
-	global _configfile,_config
-	_configfile = file
-	f = open(file,'r')
-	_config = json.load(f)
-	f.close()
-	
-def saveConfig():
-	stream = open(_configfile,'w')
-	json.dump(config,stream, sort_keys=True, indent=4)
-	stream.close()
 	
 def isAdmin(username):
 	global config
-	return nm_to_n(username) in config('admins')
+	return nm_to_n(username) in config['admins']
 
 def tuppleToList(names,tupple):
 	list = []

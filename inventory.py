@@ -2,9 +2,11 @@ from common import *
 import re
 import random
 import copy
+from cfg import *
 
 class Factory(CommandModuleFactory):
 	def Commands(self):
+		print config
 		return {
 			'giveitem':GiveItem(),
 			'dropitem':DropItem(),
@@ -124,7 +126,7 @@ class GiveItem(BotCommand):
 		for r in [r"puts\s((?P<particle>a|an|this|some|lots of)\s)?(?P<item>.+)\sin\s%(nick)s",
 				r"(gives|hands)\s%(nick)s\s((?P<particle>a|an|this|some|lots of)\s)?(?P<item>.+)",
 				r"(gives|hands)\s((?P<particle>a|an|this|some|lots of)\s)?(?P<item>.+)\sto\s%(nick)s"]:
-			self._rx_action.append(re.compile(r%{'nick':config('nickname')},re.IGNORECASE))
+			self._rx_action.append(re.compile(r%{'nick':config['nickname']},re.IGNORECASE))
 		self._rx_directed = [re.compile(r"(take|have)\s((?P<particle>a|an|this)\s)?(?P<item>.+)")]
 		self._items = None
 		self._itemsCache = None
@@ -185,7 +187,7 @@ class GiveItem(BotCommand):
 					'particle':particle}
 			if self.HasItem(item['name']):
 				f = pickOne(self._hasItemFactoid)
-			elif len(self._items) == config('maxItems'):
+			elif len(self._items) == config['maxItems']:
 				f = pickOne(self._maxItemCountFactoid)
 				self.TakeItem(item,bot)
 			else:
@@ -204,14 +206,14 @@ class GiveItem(BotCommand):
 	
 	def _refreshItemCache(self,bot):
 		self._itemsCache = {}
-		for i in bot.sql("select name,owner,particle from bucket_items order by RAND() limit %s;",(config('maxItems')*5),['name','owner','particle']):
+		for i in bot.sql("select name,owner,particle from bucket_items order by RAND() limit %s;",(config['maxItems']*5),['name','owner','particle']):
 			self._itemsCache[i['name']]=i
 	
 	def _fillInventory(self, bot):
 		self._refreshItemCache(bot)
 		self._items={}
-		if len(self._itemsCache) > config('initialItems'):
-			for i in range(0,config('initialItems')):
+		if len(self._itemsCache) > config['initialItems']:
+			for i in range(0,config['initialItems']):
 				while True:
 					i = self._itemsCache.values()[random.randint(0,len(self._itemsCache)-1)]
 					if not self.HasItem(i['name']):

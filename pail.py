@@ -13,12 +13,12 @@ from irclib import nm_to_n, nm_to_h, irc_lower, ip_numstr_to_quad, ip_quad_to_nu
 import re
 import MySQLdb
 import random
-import json
 import sys 
 from common import *
 import factoids
 import variables
 import inventory
+from cfg import *
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -113,8 +113,8 @@ class IrcQuery:
 		self._respondto = respondto
 		self._channel = channel
 		self._IsAction = isAction
-		if messagetext.lower().startswith(config('nickname').lower()+": ") or messagetext.lower().startswith(config('nickname').lower()+", "):
-			self._messagetext = messagetext[len(config('nickname'))+2:].strip()
+		if messagetext.lower().startswith(config['nickname'].lower()+": ") or messagetext.lower().startswith(config['nickname'].lower()+", "):
+			self._messagetext = messagetext[len(config['nickname'])+2:].strip()
 			self._directed = True
 		else:
 			self._messagetext = messagetext.strip()
@@ -173,6 +173,7 @@ class Pail(SingleServerIRCBot):
 		
 		for m in modules:
 			f = m.Factory()
+			print config
 			self.commands = dict(self.commands.items() + f.Commands().items())
 			exp = f.Exports()
 			for k in exp:
@@ -183,7 +184,7 @@ class Pail(SingleServerIRCBot):
 		
 		self.disabledCommands = {}
 		
-		for c in config('disabledCommands'):
+		for c in config['disabledCommands']:
 			self.disableCommand(c)
 
 	def on_action(self, c,e):
@@ -194,7 +195,7 @@ class Pail(SingleServerIRCBot):
 		c.nick(c.get_nickname() + "_")
 
 	def on_welcome(self, c, e):
-		for ch in config('channels'):
+		for ch in config['channels']:
 			self.connection.join(ch)
 
 	def on_privmsg(self, c, e):
@@ -208,11 +209,11 @@ class Pail(SingleServerIRCBot):
 	def log(self, logtext):
 		c = self.connection
 		print logtext
-		if config('logChannel'):
-			c.privmsg(config('logChannel'),logtext)
+		if config['logChannel']:
+			c.privmsg(config['logChannel'],logtext)
 		
 	def processQuery(self, query):
-		if not nm_to_n(query.From()) in config('ignore'):
+		if not nm_to_n(query.From()) in config['ignore']:
 			handled = False
 			for cmds in self.commands:
 				cmd = self.commands[cmds]
@@ -251,7 +252,7 @@ class Pail(SingleServerIRCBot):
 			return []
 	
 	def _connectDB(self):
-		self._db = MySQLdb.connect(host=config('dbHost'),user=config('dbUser'),passwd=config('dbPass'),db=config('dbDB'))
+		self._db = MySQLdb.connect(host=config['dbHost'],user=config['dbUser'],passwd=config['dbPass'],db=config['dbDB'])
 	
 	
 	def sql(self, query, args, mapnames=None):
@@ -277,12 +278,13 @@ class Pail(SingleServerIRCBot):
 	
 	
 def main():	
+	global config
 	if len(sys.argv) > 1:
 		configfile = sys.argv[1]
 	else:
 		configfile = 'pail.json'
-	loadConfig(configfile)
-	bot = Pail(config('nickname'), config('server'), config('port'))
+	config = Config(configfile)
+	bot = Pail(config['nickname'], config['server'], config['port'])
 	bot.start()
 
 if __name__ == "__main__":
