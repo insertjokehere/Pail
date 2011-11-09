@@ -186,7 +186,7 @@ class Pail(SingleServerIRCBot):
 				"channels":["#pail","#pail-log"]
 			}
 		
-		for i in self._defaults:
+		for i in self._defaults.items():
 			cfg.config.setDefault(i[0],i[1])
 		
 		for m in modules:
