@@ -29,20 +29,29 @@ class FactoidTrigger(BotCommand):
 		self._cache = {}
 	
 	def Try(self,bot,query):
-		isCached = False
-		if query.Message() in self._cache:
-			facts = self._cache[query.Message()]
-			isCached = True
-		else:
-			facts = bot.sql(r'select name,method,response,id from bucket_facts where name=%s;',(query.Message()),['key','method','response','id'])
+		r = self._getFactoid(query.Message(),bot)
+		isCached = r['isCached']
+		facts = r['facts']
+		
 		if len(facts) > 0:
-			self._cache[query.Message()] = facts
 			fact = self.sayFactoid(facts,bot,query)
 			resp = self.Handled("#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached})
 			bot.log(resp['debug'])
 			return resp
 		else:
 			return self.Unhandled()
+	
+	def _getFactoid(self,name,bot):
+		isCached = False
+		if name in self._cache:
+			facts = self._cache[name]
+			isCached = True
+		else:
+			facts = bot.sql(r'select name,method,response,id from bucket_facts where name=%s;',(name),['key','method','response','id'])
+			if len(facts) > 0:
+				self._cache[name] = facts
+				
+		return {'isCached':isCached,'facts':facts}
 	
 	def clearCache(self, key=""):
 		if key=="":
@@ -61,6 +70,10 @@ class FactoidTrigger(BotCommand):
 			c.privmsg(query.RespondTo(),message)
 		elif fact['method'] == 'action':
 			c.action(query.RespondTo(),message)
+		elif fact['method'] == 'alias':
+			bot.log("Following alias for %(fact)s"%{"fact":fact['key']})
+			f = self._getFactoid(fact['response'],bot)['facts']
+			return self.sayFactoid(f,bot,query)
 		else:
 			c.privmsg(query.RespondTo(),"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message})
 		return fact
