@@ -216,6 +216,10 @@ class Pail(SingleServerIRCBot):
 	def on_pubmsg(self, c, e):
 		q = IrcQuery(e.source(),e.target(),e.arguments()[0],channel=e.target())
 		self.processQuery(q)
+	
+	def on_nick(self, c, e):
+		if nm_to_n(e.source()) == cfg.config['nickname']:
+			cfg.config['nickname'] = e.target()
 		
 	def log(self, logtext):
 		c = self.connection

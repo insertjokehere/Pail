@@ -30,7 +30,7 @@ class Config:
 	def saveConfig(self):
 		cfg = dict(self._config.items())
 		for d in self._defaults.keys():
-			if cfg[d] == self._defaults[d]:
+			if d in cfg and cfg[d] == self._defaults[d]:
 				del cfg[d]
 		stream = open(self._configfile,'w')
 		json.dump(cfg,stream, sort_keys=True, indent=4)
