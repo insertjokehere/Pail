@@ -31,10 +31,11 @@ class Factory(CommandModuleFactory):
 			if not ch == cfg.config['logChannel']:
 				r = random.randint(0,cfg.config["randomTriggerChance"])
 				if r == 0:
-					self._bot.getCommand('trigger')._trigger(self._bot, ch)
+					q = IrcQuery('',ch,'',channel=ch)
+					self._bot.getCommand('trigger')._trigger(self._bot, q)
 	
-	def _bananas(self, bot, to):
-		bot.connection.privmsg(to,'Bananas!')
+	def _bananas(self, bot, query):
+		bot.connection.privmsg(query.RespondTo(),'Bananas!')
 	
 class Trigger(BotCommand):
 
@@ -46,7 +47,7 @@ class Trigger(BotCommand):
 			_match=self._rx.match(query.Message())
 			if _match:
 				triggername = _match.group('trigger')
-				if self._trigger(bot,query.RespondTo(), triggername):
+				if self._trigger(bot,query, triggername):
 					resp = self.Handled('Triggered %(trigger)s for %(who)s'%{'trigger':triggername,'who':nm_to_n(query.From())})
 				else:
 					bot.connection.privmsg(query.RespondTo(),"I'm sorry %(who)s, I don't have a trigger by that name"%{'who':nm_to_n(query.From())})
