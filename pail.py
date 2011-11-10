@@ -147,19 +147,6 @@ class Pail(SingleServerIRCBot):
 		
 		self._lastDebug = {}
 		
-		self.dontKnow = [
-			{
-				'key':'dontknow',
-				'method':'reply',
-				'response':"I'm sorry $who, I'm afraid I can't do that"
-			},
-			{
-				'key':'dontknow',
-				'method':'action',
-				'response':'explodes'
-			}
-		]
-		
 		self.commands = {
 			'test':TestCommand(),
 			'admintest':AdminTest(),
@@ -168,7 +155,7 @@ class Pail(SingleServerIRCBot):
 			'lastdebucCommand':LastDebugCommand()
 		}
 		
-		self.exports = {}
+		self.exports = {'specialfactoids':['dontknow']}
 		
 		self._defaults = {
 				"server":"localhost",
@@ -253,7 +240,7 @@ class Pail(SingleServerIRCBot):
 						handled = True
 						break
 			if not handled and query.Directed():
-				self.getCommand('factoidtrigger').sayFactoid(self.dontKnow,self,query)
+				self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)
 	
 	def disableCommand(self, command):
 		self.disabledCommands[command] = self.commands[command]

@@ -16,12 +16,10 @@ class Factory(CommandModuleFactory):
 		return {
 			'builtinvar':[{	'inventory':self._inventory,
 							'item':self._item,
-							'aitem':self._aitem,
-							'giveitem':self._giveitem,
-							'agiveitem':self._agiveitem
+							'giveitem':self._giveitem
 				}],
 			'randomtrigger':[{'givebackitem':self._givebackitem}],
-			'specialfactoid':['giveback']
+			'specialfactoid':['giveback','nothanks','maxitems','takeitem']
 		}
 	
 	def Defaults(self):
@@ -53,10 +51,12 @@ class Factory(CommandModuleFactory):
 			else:
 				text += it['particle']+" "+it['name']+", "
 		it = items[-1]
+		if len(items)>1:
+			text += "and "
 		if it['particle'] is None:
-			text += "and " + it['name']
+			text +=  it['name']
 		else:
-			text += "and " + it['particle']+" "+it['name']
+			text += it['particle']+" "+it['name']
 		return text
 	
 	def _item(self,bot,query):
@@ -152,39 +152,6 @@ class GiveItem(BotCommand):
 		self._items = None
 		self._itemsCache = None
 		
-		self._hasItemFactoid = [{
-			'trigger':'nothanks',
-			'method':'reply',
-			'response':'No thanks $who, I already have one'
-		},
-		{
-			'trigger':'nothanks',
-			'method':'reply',
-			'response':'No thanks $who, I already have $aitem'
-		}]
-		
-		self._maxItemCountFactoid = [{
-			'trigger':'maxitems',
-			'method':'action',
-			'response':'takes $aitem and drops $agiveitem'
-		},
-		{
-			'trigger':'maxitems',
-			'method':'action',
-			'response':'takes $aitem and gives $who $agiveitem in return'
-		}]
-		
-		self._takeItemFactoid = [{
-			'trigger':'takeitem',
-			'method':'action',
-			'response':'now contains $inventory'
-		},
-		{
-			'trigger':'takeitem',
-			'method':'action',
-			'response':'now has $inventory in it'
-		}]
-		
 	def Try(self,bot,query):
 		if self._items is None:
 			self._fillInventory(bot)
@@ -203,19 +170,22 @@ class GiveItem(BotCommand):
 				particle = ""
 			else:
 				particle = _match.group('particle')
-			item = {'name': _match.group('item'),
+			item = {'_':_match.group('item'),
+					'name': _match.group('item'),
 					'owner':nm_to_n(query.From()),
 					'particle':particle}
 			if self.HasItem(item['name']):
-				f = pickOne(self._hasItemFactoid)
+				f = 'nothanks'
+				this=item
 			elif len(self._items) == cfg.config['maxItems']:
-				f = pickOne(self._maxItemCountFactoid)
+				f = 'maxitems'
 				self.TakeItem(item,bot)
+				this = item
 			else:
-				f = pickOne(self._takeItemFactoid)
+				f = 'takeitem'
+				this = item
 				self.TakeItem(item,bot)
-			print self._processFactoid(f,item)
-			bot.getCommand('factoidtrigger').sayFactoid(self._processFactoid(f,item),bot,query)
+			bot.getCommand('factoidtrigger').triggerFactoid(f,bot,query,this=this)
 			resp = self.Handled('Got %(particle)s %(item)s from %(who)s'%{'item':item['name'],'who':nm_to_n(query.From()),'particle':item['particle']})
 			bot.log(resp['debug'])
 			return resp
@@ -266,11 +236,3 @@ class GiveItem(BotCommand):
 			del self._itemsCache[itemName]
 		bot.sql(r"delete from bucket_items where name=%s",(itemName))
 		
-	def _processFactoid(self, fact, item):
-		f = copy.copy(fact)
-		if item['particle'] is None:
-			f['response'] = f['response'].replace('$aitem',item['name'])
-		else:
-			f['response'] = f['response'].replace('$aitem',item['particle']+" "+item['name'])
-		f['response'] = f['response'].replace('$item',item['name'])
-		return f

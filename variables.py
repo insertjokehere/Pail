@@ -25,7 +25,7 @@ class ProtectVariable(ProtectCommand):
 
 class AddVar(BotCommand):
 	def __init__(self):
-		self._rx = re.compile(r'(?P<name>\w+)\s*:=\s*(?P<value>.+)',re.IGNORECASE)
+		self._rx = re.compile(r'\$?(?P<name>\w+)\s*:=\s*(?P<value>.+)',re.IGNORECASE)
 	
 	def Try(self,bot,query):
 		if query.Directed():
@@ -96,7 +96,11 @@ class LookupVar(BotCommand):
 		return pickOne(users)
 	
 	def replaceVars(self,bot,query,message,this=None):
-		return self._rx_find.sub(self._replacer(bot,query,self,this)._replace,message)
+		_m = self._rx_find.search(message)
+		while not _m is None:
+			message = self._rx_find.sub(self._replacer(bot,query,self,this)._replace,message)
+			_m = self._rx_find.search(message)
+		return message
 		
 	class _replacer:
 		
