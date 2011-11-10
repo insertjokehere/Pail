@@ -20,7 +20,8 @@ class Factory(CommandModuleFactory):
 							'giveitem':self._giveitem,
 							'agiveitem':self._agiveitem
 				}],
-			'randomtrigger':[{'givebackitem':self._givebackitem}]
+			'randomtrigger':[{'givebackitem':self._givebackitem}],
+			'specialfactoid':['giveback']
 		}
 	
 	def Defaults(self):
@@ -87,28 +88,9 @@ class Factory(CommandModuleFactory):
 	def _refreshinventory(self,args):
 		self._bot.log("Refreshing item cache")
 		self._bot.getCommand('giveitem')._refreshItemCache(self._bot)
-	
-	_giveBackFactoids = [{'trigger':'giveback',
-						  'method':'action',
-						  'response':"gives %(particle)s %(itemname)s back to %(owner)s"
-						  },
-						 {'trigger':'giveback',
-						  'method':'action',
-						  'response':"hands %(particle)s %(itemname)s back to %(owner)s"
-						  },
-						  {'trigger':'giveback',
-						  'method':'action',
-						  'response':"throws %(particle)s %(itemname)s at $someone"
-						  }
-						]
-	
+
 	def _givebackitem(self, bot, query):
-		givebackf = copy.copy(pickOne(self._giveBackFactoids))
-		giveitem = bot.getCommand('giveitem')
-		item = pickOne(giveitem._items.values())
-		giveitem.DropItem(item['name'])
-		givebackf['response'] = givebackf['response']%{'particle':item['particle'],'owner':item['owner'],'itemname':item['name']}
-		bot.getCommand('factoidtrigger').sayFactoid(givebackf,bot,query)
+		bot.getCommand('factoidtrigger').triggerFactoid('giveback',bot,query)
 	
 class ForgetItem(BotCommand):
 	def __init__(self):

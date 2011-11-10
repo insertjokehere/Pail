@@ -51,7 +51,7 @@ class LookupVar(BotCommand):
 			'op':self._admin
 		}
 		self._vars = None
-		self._rx_find = re.compile(r'\$(?P<varname>\w+)(.?(?P<subscript>\w+))?',re.IGNORECASE)
+		self._rx_find = re.compile(r'\$(?P<varname>\w+)(\.(?P<subscript>\w+))?',re.IGNORECASE)
 		self._rx = re.compile(r'(what is|show) var(iable)? \$?(?P<varname>\w+)\??',re.IGNORECASE)
 	
 	def Try(self,bot,query):

@@ -10,7 +10,6 @@ def pickOne(list):
 	return list[r]
 	
 def isAdmin(username):
-	global config
 	return nm_to_n(username) in cfg.config['admins']
 
 def tuppleToList(names,tupple):
