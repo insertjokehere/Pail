@@ -35,7 +35,7 @@ class Factory(CommandModuleFactory):
 					self._bot.getCommand('trigger')._trigger(self._bot, q)
 	
 	def _bananas(self, bot, query):
-		bot.connection.privmsg(query.RespondTo(),'Bananas!')
+		bot.say(query,'Bananas!')
 	
 class Trigger(BotCommand):
 
@@ -50,7 +50,7 @@ class Trigger(BotCommand):
 				if self._trigger(bot,query, triggername):
 					resp = self.Handled('Triggered %(trigger)s for %(who)s'%{'trigger':triggername,'who':nm_to_n(query.From())})
 				else:
-					bot.connection.privmsg(query.RespondTo(),"I'm sorry %(who)s, I don't have a trigger by that name"%{'who':nm_to_n(query.From())})
+					bot.say(query,"I'm sorry %(who)s, I don't have a trigger by that name"%{'who':nm_to_n(query.From())})
 					resp = self.Handled("%(who)s tried to trigger unknown trigger '%(trigger)s'"%{'who':nm_to_n(query.From()),'trigger':triggername})
 				return resp
 		return self.Unhandled()

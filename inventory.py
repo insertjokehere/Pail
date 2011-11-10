@@ -59,8 +59,9 @@ class Factory(CommandModuleFactory):
 		return text
 	
 	def _item(self,bot,query):
-		item = pickOne(bot.getCommand('giveitem')._items.values())
-		return item['name']
+		item = copy.copy(pickOne(bot.getCommand('giveitem')._items.values()))
+		item['_'] = item['name']
+		return item
 	
 	def _aitem(self,bot,query):
 		item = pickOne(bot.getCommand('giveitem')._items.values())
@@ -70,9 +71,10 @@ class Factory(CommandModuleFactory):
 			return item['particle']+" "+item['name']
 		
 	def _giveitem(self,bot,query):
-		item = pickOne(bot.getCommand('giveitem')._items.values())
+		item = copy.copy(pickOne(bot.getCommand('giveitem')._items.values()))
 		bot.getCommand('giveitem').DropItem(item['name'])
-		return item['name']
+		item['_'] = item['name']
+		return item
 	
 	def _agiveitem(self,bot,query):
 		item = pickOne(bot.getCommand('giveitem')._items.values())

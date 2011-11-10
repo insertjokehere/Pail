@@ -60,22 +60,21 @@ class FactoidTrigger(BotCommand):
 			del self._cache[key]
 			
 	def sayFactoid(self, facts, bot, query):
-		c=bot.connection
 		if type(facts) is dict:
 			fact = facts
 		else:
 			fact = pickOne(facts)
 		message = bot.getCommand('lookupvar').replaceVars(bot,query,fact['response'])
 		if fact['method']== 'reply':
-			c.privmsg(query.RespondTo(),message)
+			bot.say(query,message)
 		elif fact['method'] == 'action':
-			c.action(query.RespondTo(),message)
+			bot.say(query,message,mode='action')
 		elif fact['method'] == 'alias':
 			bot.log("Following alias for %(fact)s"%{"fact":fact['key']})
 			f = self._getFactoid(fact['response'],bot)['facts']
 			return self.sayFactoid(f,bot,query)
 		else:
-			c.privmsg(query.RespondTo(),"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message})
+			bot.say(query,"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message})
 		return fact
 
 class TeachFactoid(BotCommand):

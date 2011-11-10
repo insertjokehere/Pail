@@ -51,7 +51,7 @@ class LookupVar(BotCommand):
 			'op':self._admin
 		}
 		self._vars = None
-		self._rx_find = re.compile(r'\$(\w+)',re.IGNORECASE)
+		self._rx_find = re.compile(r'\$(?P<varname>\w+)(.?(?P<subscript>\w+))?',re.IGNORECASE)
 		self._rx = re.compile(r'(what is|show) var(iable)? \$?(?P<varname>\w+)\??',re.IGNORECASE)
 	
 	def Try(self,bot,query):
@@ -65,13 +65,13 @@ class LookupVar(BotCommand):
 					for v in self._cache[varname]:
 						msg += "%(id)s:'%(value)s', "%{'value':v['value'],'id':v['id']}
 					msg = msg[:-2]+"]"
-					bot.connection.privmsg(query.RespondTo(),msg)
 					resp = self.Handled("%(who)s looked up variable '%(varname)s'"%{'who':nm_to_n(query.From()),'varname':varname})
 					bot.log(resp['debug'])
 					return resp
 				else:
-					bot.command.privmsg(query.RespondTo(),"I don't know about that variable, %(who)s"%{'who':nm_to_n(query.From())})
+					msg = "I don't know about that variable, %(who)s"%{'who':nm_to_n(query.From())}
 					resp = self.Handled("%(who)s looked up unknown variable '%(varname)s'"%{'who':nm_to_n(query.From()),'varname':varname})
+				bot.say(query,msg)
 				bot.log(resp['debug'])
 				return resp
 		return self.Unhandled()
@@ -95,15 +95,19 @@ class LookupVar(BotCommand):
 			users.remove(cfg.config['nickname'])
 		return pickOne(users)
 	
-	def replaceVars(self,bot,query,message):
-		return self._rx_find.sub(self._replacer(bot,query,self)._replace,message)
+	def replaceVars(self,bot,query,message,this=None):
+		return self._rx_find.sub(self._replacer(bot,query,self,this)._replace,message)
 		
 	class _replacer:
 		
-		def __init__(self,bot,query,parent):
+		def __init__(self,bot,query,parent,this=None):
 			self._bot = bot
 			self._query = query
 			self._parent = parent
+			self._vartable = {}
+			
+			if not this is None:
+				self._vartable['this']=this
 			
 			if parent._vars is None:
 				parent._vars = parent._internalVars
@@ -111,9 +115,20 @@ class LookupVar(BotCommand):
 					parent._vars = dict(parent._vars.items() + v.items())
 	
 		def _replace(self,_match):
-			varname = _match.group(1)
+			varname = _match.group('varname')
+			
+			if _match.group('subscript') is None:
+				subscript = '_'
+			else:
+				subscript = _match.group('subscript')
+			
+			if varname in self._vartable.keys():
+				v = self._vartable[varname]
+				return self._subscript(v,subscript)
 			if varname in self._parent._vars:
-				return self._parent._vars[varname](self._bot,self._query)
+				v = self._parent._vars[varname](self._bot,self._query)
+				self._vartable[varname]=v
+				return self._subscript(v,subscript)
 			elif varname in self._parent._cache:
 				return pickOne(self._parent._cache[varname])['value']
 			else:
@@ -123,4 +138,11 @@ class LookupVar(BotCommand):
 					return pickOne(self._parent._cache[varname])['value']
 				else:
 					return varname
+					
+		def _subscript(self,var,subscript):
+			if isinstance(var,str):
+				return var
+			else:
+				return var[subscript]
+			
 

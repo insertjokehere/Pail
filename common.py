@@ -51,8 +51,7 @@ class BotCommand:
 		return self.Unhandled()
 
 	def OK(self,bot,query):
-		c=bot.connection
-		c.privmsg(query.RespondTo(),"Ok, %(who)s" % {'who':nm_to_n(query.From())})
+		bot.say(query,"Ok, %(who)s" % {'who':nm_to_n(query.From())})
 	
 	def Unhandled(self):
 		return {'handled':False}
@@ -80,7 +79,7 @@ class DeleteCommand(BotCommand):
 						self.OK(bot,query)
 						resp = self.Handled('deleted %(type)s #%(num)s for %(who)s'%{'type':self._type,'num':id,'who':nm_to_n(query.From())})
 					else:
-						bot.connection.privmsg(query.RespondTo(),"Sorry %(who)s, that %(type)s is protected"%{'who':nm_to_n(query.From()),'type':self._type})
+						bot.say(query,"Sorry %(who)s, that %(type)s is protected"%{'who':nm_to_n(query.From()),'type':self._type})
 						resp = self.Handled('%(who)s attempted to delete protected %(type)s #%(num)s'%{'who':query.From(),'num':id,'type':self._type})
 				elif isAdmin(query.From()): #batch delete, requires admin
 					key=_match.group('id')
@@ -89,7 +88,7 @@ class DeleteCommand(BotCommand):
 					self.OK(bot,query)
 					resp=self.Handled("deleted %(type)s '%(key)s' for %(who)s"%{'type':self._type,'who':query.From(),'key':key})
 				else:
-					bot.connection.privmsg(query.RespondTo(),"Sorry %(who)s, you need to be an admin to do that"%{'who':nm_to_n(query.From())})
+					bot.say(query,"Sorry %(who)s, you need to be an admin to do that"%{'who':nm_to_n(query.From())})
 					resp = self.Handled("%(who)s attempted to batch delete factoid '%(key)s'"%{'who':query.From(),'key':key})
 				bot.log(resp['debug'])
 				return resp

@@ -29,7 +29,7 @@ class LastDebugCommand(BotCommand):
 		if query.Directed() and 'message' in bot._lastDebug:
 			_match = self._rx.match(query.Message())
 			if _match:
-				bot.connection.privmsg(query.RespondTo(),"That was: (%(lastsource)s) '%(lastmessage)s'"%{'lastmessage':bot._lastDebug['message'],'lastsource':bot._lastDebug['source']})
+				bot.say(query,"That was: (%(lastsource)s) '%(lastmessage)s'"%{'lastmessage':bot._lastDebug['message'],'lastsource':bot._lastDebug['source']})
 				return self.Handled()
 		return self.Unhandled()
 		
@@ -83,9 +83,8 @@ class JoinPartCommand(BotCommand):
 		
 class TestCommand(BotCommand):
 	def Try(self, bot, query):
-		c = bot.connection
 		if query.Directed() and query.Message().lower() == 'test':
-			c.privmsg(query.RespondTo(),query.Message())
+			bot.say(query,query.Message())
 			return self.Handled('test: test command')
 		else:
 			return self.Unhandled()
@@ -95,11 +94,10 @@ class AdminTest(BotCommand):
 		self._rx = re.compile('am i an admin\??',re.IGNORECASE)
 		
 	def Try(self,bot,query):
-		c = bot.connection
 		if query.Directed():
 			_match = self._rx.match(query.Message())
 			if _match:
-				c.privmsg(query.RespondTo(),"You are an admin, %(who)s"%{'who':nm_to_n(query.From())})
+				bot.say(query,"You are an admin, %(who)s"%{'who':nm_to_n(query.From())})
 				return self.Handled('admintest: admin test command')
 		return self.Unhandled()
 		
@@ -308,6 +306,16 @@ class Pail(SingleServerIRCBot):
 		if not function(arguments):
 			self.execute_every(interval,function,arguments)
 	
+	def say(self, query, message, this=None,mode="privmsg"):
+		if 'lookupvar' in self.commands:
+			message = self.getCommand('lookupvar').replaceVars(self,query,message,this)
+		for filter in self.getExport('outputfilter'):
+			message = filter(query, message, this)
+		if mode=="privmsg":
+			self.connection.privmsg(query.RespondTo(),message)
+		elif mode=="action":
+			self.connection.action(query.RespondTo(),message)
+		
 	
 def main():	
 	if len(sys.argv) > 1:
