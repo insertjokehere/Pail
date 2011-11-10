@@ -1,4 +1,5 @@
 from common import *
+from pail import IrcQuery
 import re
 import random
 import cfg

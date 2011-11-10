@@ -20,6 +20,7 @@ import variables
 import inventory
 import cfg
 import randomness
+import traceback
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -230,21 +231,26 @@ class Pail(SingleServerIRCBot):
 	def processQuery(self, query):
 		if not nm_to_n(query.From()) in cfg.config['ignore']:
 			handled = False
-			for cmds in self.commands:
-				cmd = self.commands[cmds]
-				adminCheck = (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin() #true if the admin requirements are met
-				actionCheck = not(cmd.IgnoreActions() and query.IsAction()) #check if the action requirements are met
-				if adminCheck and actionCheck:
-					result = cmd.Try(self,query)
-					if result['handled']:
-						if 'debug' in result:
-							self._lastDebug = {'message':result['debug'],'source':cmds}
-						if not self._db is None:
-							self._db.commit()
-						handled = True
-						break
-			if not handled and query.Directed():
+			try:
+				for cmds in self.commands:
+					cmd = self.commands[cmds]
+					adminCheck = (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin() #true if the admin requirements are met
+					actionCheck = not(cmd.IgnoreActions() and query.IsAction()) #check if the action requirements are met
+					if adminCheck and actionCheck:
+						result = cmd.Try(self,query)
+						if result['handled']:
+							if 'debug' in result:
+								self._lastDebug = {'message':result['debug'],'source':cmds}
+							if not self._db is None:
+								self._db.commit()
+							handled = True
+							break
+				if not handled and query.Directed():
+					self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)
+			except Exception as inst:
+				traceback.print_exc()
 				self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)
+			
 	
 	def disableCommand(self, command):
 		self.disabledCommands[command] = self.commands[command]
