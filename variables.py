@@ -35,9 +35,7 @@ class AddVar(BotCommand):
 				value = _match.group('value')
 				bot.sql('insert into pail_vars (name,value,protected) values(%s,%s,%s)',(name,value,0))
 				self.OK(bot,query)
-				resp = self.Handled("%(who)s added value '%(val)s' to variable %(name)s"%{'who':nm_to_n(query.From()),'val':value,'name':name})
-				bot.log(resp['debug'])
-				return resp
+				return self.Handled("%(who)s added value '%(val)s' to variable %(name)s"%{'who':nm_to_n(query.From()),'val':value,'name':name})
 		return self.Unhandled()
 		
 class LookupVar(BotCommand):
@@ -66,13 +64,10 @@ class LookupVar(BotCommand):
 						msg += "%(id)s:'%(value)s', "%{'value':v['value'],'id':v['id']}
 					msg = msg[:-2]+"]"
 					resp = self.Handled("%(who)s looked up variable '%(varname)s'"%{'who':nm_to_n(query.From()),'varname':varname})
-					bot.log(resp['debug'])
-					return resp
 				else:
 					msg = "I don't know about that variable, %(who)s"%{'who':nm_to_n(query.From())}
 					resp = self.Handled("%(who)s looked up unknown variable '%(varname)s'"%{'who':nm_to_n(query.From()),'varname':varname})
 				bot.say(query,msg)
-				bot.log(resp['debug'])
 				return resp
 		return self.Unhandled()
 	

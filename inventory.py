@@ -103,10 +103,8 @@ class ForgetItem(BotCommand):
 				giveitem = bot.getCommand('giveitem')
 				itemname = _match.group('itemname')
 				giveitem.ForgetItem(itemname,bot)
-				resp = self.Handled('forgot item %(item)s for %(who)s'%{'item':itemname,'who':nm_to_n(query.From())})
 				self.OK(bot,query)
-				bot.log(resp['debug'])
-				return resp
+				return self.Handled('forgot item %(item)s for %(who)s'%{'item':itemname,'who':nm_to_n(query.From())})
 		return self.Unhandled()
 		
 	def RequiresAdmin(self):
@@ -130,9 +128,7 @@ class DropItem(BotCommand):
 					return self.Unhandled()
 				giveitem.DropItem(item['name'])
 				bot.getCommand('factoidtrigger').triggerFactoid('takeitem',bot,query,item)
-				resp = self.Handled('Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())})
-				bot.log(resp['debug'])
-				return resp
+				return self.Handled('Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())})
 		return self.Unhandled()
 		
 class GiveItem(BotCommand):
@@ -179,9 +175,7 @@ class GiveItem(BotCommand):
 				this = item
 				self.TakeItem(item,bot)
 			bot.getCommand('factoidtrigger').triggerFactoid(f,bot,query,this=this)
-			resp = self.Handled('Got %(particle)s %(item)s from %(who)s'%{'item':item['name'],'who':nm_to_n(query.From()),'particle':item['particle']})
-			bot.log(resp['debug'])
-			return resp
+			return self.Handled('Got %(particle)s %(item)s from %(who)s'%{'item':item['name'],'who':nm_to_n(query.From()),'particle':item['particle']})
 		return self.Unhandled()
 	
 	def IgnoreActions(self):

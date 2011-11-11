@@ -37,8 +37,7 @@ class FactoidTrigger(BotCommand):
 		
 		if len(facts) > 0:
 			fact = self.sayFactoid(facts,bot,query)
-			resp = self.Handled("#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached})
-			bot.log(resp['debug'])
+			return self.Handled("#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached})
 			return resp
 		else:
 			return self.Unhandled()
@@ -102,7 +101,6 @@ class TeachFactoid(BotCommand):
 					bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 					self.OK(bot,query)
 					resp = self.Handled("%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':key,'method':method,'response':response,'who':query.From()})
-				bot.log(resp['debug'])
 				return resp
 		return self.Unhandled()
 		

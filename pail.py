@@ -21,6 +21,8 @@ import inventory
 import cfg
 import randomness
 import traceback
+import string
+import time
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -46,13 +48,11 @@ class CommandModeChange(BotCommand):
 				if _match.group('method').lower() == 'disable':
 					bot.disableCommand(_match.group('command'))
 					self.OK(bot,query)
-					bot.log("%(who)s disabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
-					return self.Handled('commandmodechange: enable/disable a command')
+					return self.Handled("%(who)s disabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
 				elif _match.group('method').lower() == 'enable':
 					bot.enableCommand(_match.group('command'))
 					self.OK(bot,query)
-					bot.log("%(who)s enabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
-					return self.Handled('commandmodechange: enable/disable a command')
+					return self.Handled("%(who)s enabled command %(command)s"%{'who':query.From(),'command':_match.group(2)})
 				else:
 					return self.Unhandled()
 		return self.Unhandled()
@@ -77,9 +77,7 @@ class JoinPartCommand(BotCommand):
 				else:
 					bot.connection.part(_match.group('channel'))
 				self.OK(bot,query)
-				resp=self.Handled('%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()})
-				bot.log(resp['debug'])
-				return resp
+				return self.Handled('%(mode)sed %(chan)s at the request of %(who)s'%{'mode':_match.group('mode'),'chan':_match.group('channel'),'who':query.From()})
 		return self.Unhandled()
 		
 class TestCommand(BotCommand):
@@ -105,7 +103,50 @@ class AdminTest(BotCommand):
 	def RequiresAdmin(self):
 		return True
 
-
+class Shutup(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r"(shut(\s)?up|fuck\soff|piss\soff|by\squiet|go\saway)(\sfor\s((?P<duration_w>a\sbit|a\swhile)|((?P<duration_d>\d+)\s?(?P<duration_m>h(ours)?|m(inutes)?|s(econds)?))))",re.IGNORECASE)
+	
+	def Try(self,bot,query):
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				if _match.group('duration_w'):
+					this = _match.group('duration_w')
+					if _match.group('duration_w').lower() == "a bit":
+						duration = 60 * random.randint(2,5) +random.randint(0,30)
+					elif _match.group('duration_w').lower() == "a while":
+						duration = 60 * random.randint(5,15) +random.randint(0,30)
+				else: #_match.group('duration_d')
+					this = _match.group('duration_d')
+					duration = int(_match.group('duration_d'))
+					if _match.group('duration_m').lower()[0] == "h":
+						duration = duration*60*60
+						this += " hours"
+					elif _match.group('duration_m').lower()[0] == "h":
+						duration = duration*60
+						this += " minutes"
+					else:
+						this += " seconds"
+				if duration > cfg.config['maxgoaway']:
+					duration = cfg.config['maxgoaway']
+				bot.say(query, "Ok $who, I will be quiet for $this",this=this)
+				bot.shutup(duration,query.Channel())
+				return self.Handled("shutting up for %(duration)d seconds for %(who)s"%{'duration':duration,'who':nm_to_n(query.From())})
+		return self.Unhandled()
+		
+class UnShutup(BotCommand):
+	def __init__(self):
+		self._rx = re.compile(r"(come\sback|unshutup)",re.IGNORECASE)
+	
+	def Try(self,bot,query):
+		if query.Directed():
+			_match = self._rx.match(query.Message())
+			if _match:
+				bot.unshutup(query.Channel())
+				bot.say(query,"\o/")
+				return self.Handled("unshutup by %(who)s"%{'who':nm_to_n(query.From())})
+		return self.Unhandled()
 	
 class IrcQuery:
 	def __init__(self,fromuser,respondto,messagetext,channel="",directed=False,isAction=False):
@@ -143,6 +184,7 @@ class Pail(SingleServerIRCBot):
 		SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
 		#self.channel = channel
 		self._db = None
+		self._shutupin = []
 		
 		modules = [factoids,variables,inventory,randomness]
 		
@@ -153,7 +195,9 @@ class Pail(SingleServerIRCBot):
 			'admintest':AdminTest(),
 			'commandmodechange':CommandModeChange(),
 			'joinpartcommand':JoinPartCommand(),
-			'lastdebucCommand':LastDebugCommand()
+			'lastdebugcommand':LastDebugCommand(),
+			'shutup':Shutup(),
+			'unshutup':UnShutup()
 		}
 		
 		self.exports = {'specialfactoids':['dontknow']}
@@ -170,7 +214,8 @@ class Pail(SingleServerIRCBot):
 				"dbPass":"not-my-real-password",
 				"dbDB":"pail",
 				"ignore":[],
-				"channels":["#pail","#pail-log"]
+				"channels":["#pail","#pail-log"],
+				"maxgoaway":2*60*60
 			}
 		
 		for i in self._defaults.items():
@@ -224,33 +269,36 @@ class Pail(SingleServerIRCBot):
 		
 	def log(self, logtext):
 		c = self.connection
-		print logtext
+		print "[%(time)s] %(message)s"%{'time':time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"message":logtext}
 		if cfg.config['logChannel']:
 			c.privmsg(cfg.config['logChannel'],logtext)
 		
 	def processQuery(self, query):
 		if not nm_to_n(query.From()) in cfg.config['ignore']:
-			handled = False
-			try:
-				for cmds in self.commands:
-					cmd = self.commands[cmds]
-					adminCheck = (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin() #true if the admin requirements are met
-					actionCheck = not(cmd.IgnoreActions() and query.IsAction()) #check if the action requirements are met
-					if adminCheck and actionCheck:
-						result = cmd.Try(self,query)
-						if result['handled']:
-							if 'debug' in result:
-								self._lastDebug = {'message':result['debug'],'source':cmds}
-							if not self._db is None:
-								self._db.commit()
-							handled = True
-							break
-				if not handled and query.Directed():
-					self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)
-			except Exception as inst:
-				traceback.print_exc()
-				self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)
-			
+			if query.Channel() in self._shutupin and not query.Directed() and not query.Channel() == cfg.config['logChannel']:
+				return
+			else:
+				handled = False
+				try:
+					for cmds in self.commands:
+						cmd = self.commands[cmds]
+						adminCheck = (cmd.RequiresAdmin() and isAdmin(query.From())) or not cmd.RequiresAdmin() #true if the admin requirements are met
+						actionCheck = not(cmd.IgnoreActions() and query.IsAction()) #check if the action requirements are met
+						if adminCheck and actionCheck:
+							result = cmd.Try(self,query)
+							if result['handled']:
+								if 'debug' in result:
+									self._lastDebug = {'message':result['debug'],'source':cmds}
+									self.log(self._lastDebug['message'])
+								if not self._db is None:
+									self._db.commit()
+								handled = True
+								break
+					if not handled and query.Directed():
+						self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)
+				except Exception as inst:
+					traceback.print_exc()
+					self.getCommand('factoidtrigger').triggerFactoid('dontknow',self,query)			
 	
 	def disableCommand(self, command):
 		self.disabledCommands[command] = self.commands[command]
@@ -304,15 +352,26 @@ class Pail(SingleServerIRCBot):
 			self.execute_every(interval,function,arguments)
 	
 	def say(self, query, message, this=None,mode="privmsg"):
+	
 		if 'lookupvar' in self.commands:
 			message = self.getCommand('lookupvar').replaceVars(self,query,message,this)
 		for filter in self.getExport('outputfilter'):
 			message = filter(query, message, this)
+		while not string.find(message,"  ") == -1:
+			message = string.replace(message, "  "," ")
 		if mode=="privmsg":
 			self.connection.privmsg(query.RespondTo(),message)
 		elif mode=="action":
 			self.connection.action(query.RespondTo(),message)
-		
+	
+	def shutup(self, duration, channel):
+		if not channel in self._shutupin:
+			self._shutupin.append(channel)
+			self.connection.execute_delayed(duration,self.unshutup,[channel])
+	
+	def unshutup(self,channel):
+		if channel in self._shutupin:
+			self._shutupin.remove(channel)
 	
 def main():	
 	if len(sys.argv) > 1:

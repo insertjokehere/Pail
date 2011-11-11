@@ -89,7 +89,6 @@ class DeleteCommand(BotCommand):
 				else:
 					bot.say(query,"Sorry %(who)s, you need to be an admin to do that"%{'who':nm_to_n(query.From())})
 					resp = self.Handled("%(who)s attempted to batch delete factoid '%(key)s'"%{'who':query.From(),'key':key})
-				bot.log(resp['debug'])
 				return resp
 		return self.Unhandled()
 
@@ -120,6 +119,5 @@ class ProtectCommand(BotCommand):
 					resp = self.Handled("%(who)s batch %(mode)sed %(type)s '%(id)s'"%{'who':nm_to_n(query.From()),'mode':_match.group('mode').lower(),'type':self._name,'id':id})
 				bot.sql(r'update %(table)s set protected=%%s where %(key)s=%%s'%{'table':self._table,'key':key},(mode,id))
 				self.OK(bot,query)
-				bot.log(resp['debug'])
 				return resp
 		return self.Unhandled()
