@@ -82,8 +82,8 @@ class DeleteCommand(BotCommand):
 						resp = self.Handled('%(who)s attempted to delete protected %(type)s #%(num)s'%{'who':query.From(),'num':id,'type':self._type})
 				elif isAdmin(query.From()): #batch delete, requires admin
 					key=_match.group('id')
-					cursor.execute('delete from %(table)s where name=%%s'%{'table':self._table},(key))
-					cursor.close()
+					bot.sql('delete from %(table)s where name=%%s'%{'table':self._table},(key))
+					self._clearCache(bot, key)
 					self.OK(bot,query)
 					resp=self.Handled("deleted %(type)s '%(key)s' for %(who)s"%{'type':self._type,'who':query.From(),'key':key})
 				else:

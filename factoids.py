@@ -61,7 +61,7 @@ class FactoidTrigger(BotCommand):
 	def clearCache(self, key=""):
 		if key=="":
 			self._cache = {}
-		elif key in self._cache:
+		elif key in self._cache.keys():
 			del self._cache[key]
 			
 	def sayFactoid(self, facts, bot, query,this=None):

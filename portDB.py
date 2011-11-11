@@ -18,23 +18,19 @@ import sys
 import re
 
 def main():
-	try:
-		if not len(sys.argv) == 3:
-			exit()
-		configfile = sys.argv[1]
-		oldDB = sys.argv[2]
-		cfg.config = cfg.Config(configfile)
-		oldDB = MySQLdb.connect(host=cfg.config['dbHost'],user=cfg.config['dbUser'],passwd=cfg.config['dbPass'],db=oldDB)
-		newDB = MySQLdb.connect(host=cfg.config['dbHost'],user=cfg.config['dbUser'],passwd=cfg.config['dbPass'],db=cfg.config['dbDB'])
-		
-		port_vars(oldDB.cursor(),newDB.cursor())
-		port_factoids(oldDB.cursor(),newDB.cursor())
-		port_items(oldDB.cursor(),newDB.cursor())
-		
-		newDB.commit()
-	except Exception:
-		newDB.rollback()
-		pass
+	if not len(sys.argv) == 3:
+		exit()
+	configfile = sys.argv[1]
+	oldDB = sys.argv[2]
+	cfg.config = cfg.Config(configfile)
+	oldDB = MySQLdb.connect(host=cfg.config['dbHost'],user=cfg.config['dbUser'],passwd=cfg.config['dbPass'],db=oldDB)
+	newDB = MySQLdb.connect(host=cfg.config['dbHost'],user=cfg.config['dbUser'],passwd=cfg.config['dbPass'],db=cfg.config['dbDB'])
+	
+	port_vars(oldDB.cursor(),newDB.cursor())
+	port_factoids(oldDB.cursor(),newDB.cursor())
+	port_items(oldDB.cursor(),newDB.cursor())
+	
+	newDB.commit()
 
 def port_vars(oldDB,newDB):
 	print "Porting variables"

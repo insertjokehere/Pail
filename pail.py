@@ -159,9 +159,9 @@ class Pail(SingleServerIRCBot):
 		self.exports = {'specialfactoids':['dontknow']}
 		
 		self._defaults = {
-				"server":"localhost",
-				"port":6667,
-				"nickname":"pail",
+				"server":"",
+				"port":0,
+				"nickname":"",
 				"disabledCommands":[],
 				"admins":[],
 				"logChannel":"#pail-log",
