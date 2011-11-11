@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.1.36, for Win64 (unknown)
 --
--- Host: localhost    Database: Bucket
+-- Host: localhost    Database: pail
 -- ------------------------------------------------------
 -- Server version	5.1.36-community
 
@@ -23,13 +23,13 @@ DROP TABLE IF EXISTS `pail_facts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pail_facts` (
-  `name` varchar(50) NOT NULL,
+  `name` text NOT NULL,
   `method` varchar(20) NOT NULL,
-  `response` varchar(200) NOT NULL,
+  `response` text NOT NULL,
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `protected` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -51,7 +51,7 @@ DROP TABLE IF EXISTS `pail_items`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pail_items` (
   `name` varchar(50) NOT NULL,
-  `owner` varchar(20) NOT NULL,
+  `owner` varchar(64) NOT NULL,
   `particle` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -79,7 +79,7 @@ CREATE TABLE `pail_vars` (
   `id` int(20) unsigned NOT NULL AUTO_INCREMENT,
   `protected` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -101,4 +101,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2011-11-11 13:36:37
+-- Dump completed on 2011-11-11 14:53:01
