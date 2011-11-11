@@ -7,7 +7,7 @@ import cfg
 class Factory(CommandModuleFactory):
 	def Commands(self):
 		return {
-			'giveitem':GiveItem(),
+			'giveitem':GiveItem(self._bot),
 			'dropitem':DropItem(),
 			'forgetitem':ForgetItem()
 		}
@@ -34,7 +34,7 @@ class Factory(CommandModuleFactory):
 				'function':self._refreshinventory}]
 	
 	def _inventory(self, bot, query):
-		items = bot.getCommand('giveitem')._items.values()
+		items = bot.getCommand('giveitem').Items().values()
 		random.shuffle(items)
 		text = ""
 		for i in range(0,len(items)-1):
@@ -60,25 +60,25 @@ class Factory(CommandModuleFactory):
 		return text
 	
 	def _item(self,bot,query):
-		item = copy.copy(pickOne(bot.getCommand('giveitem')._items.values()))
+		item = copy.copy(pickOne(bot.getCommand('giveitem').Items().values()))
 		item['_'] = item['name']
 		return item
 	
 	def _aitem(self,bot,query):
-		item = pickOne(bot.getCommand('giveitem')._items.values())
+		item = pickOne(bot.getCommand('giveitem').Items().values())
 		if item['particle'] is None:
 			return item['name']
 		else:
 			return item['particle']+" "+item['name']
 		
 	def _giveitem(self,bot,query):
-		item = copy.copy(pickOne(bot.getCommand('giveitem')._items.values()))
+		item = copy.copy(pickOne(bot.getCommand('giveitem').Items().values()))
 		bot.getCommand('giveitem').DropItem(item['name'])
 		item['_'] = item['name']
 		return item
 	
 	def _agiveitem(self,bot,query):
-		item = pickOne(bot.getCommand('giveitem')._items.values())
+		item = pickOne(bot.getCommand('giveitem').Items().values())
 		bot.getCommand('giveitem').DropItem(item['name'])
 		if item['particle'] is None:
 			return item['name']
@@ -101,8 +101,6 @@ class ForgetItem(BotCommand):
 			_match = self._rx.match(query.Message())
 			if _match:
 				giveitem = bot.getCommand('giveitem')
-				if giveitem._items is None:
-					giveitem._fillInventory(bot)
 				itemname = _match.group('itemname')
 				giveitem.ForgetItem(itemname,bot)
 				resp = self.Handled('forgot item %(item)s for %(who)s'%{'item':itemname,'who':nm_to_n(query.From())})
@@ -123,26 +121,23 @@ class DropItem(BotCommand):
 			_match = self._rx.match(query.Message())
 			if _match:
 				giveitem = bot.getCommand('giveitem')
-				#todo: wrap this behavior in GiveItem
-				if giveitem._items is None:
-					giveitem._fillInventory(bot)
 				itemname = _match.group('itemname')
 				if itemname=="something":
-					item = pickOne(giveitem._items.values())
-				elif itemname in giveitem._items:
-					item = giveitem._items[itemname]
+					item = pickOne(giveitem.Items().values())
+				elif itemname in giveitem.Items():
+					item = giveitem.Items()[itemname]
 				else:
 					return self.Unhandled()
 				giveitem.DropItem(item['name'])
-				f = pickOne(giveitem._takeItemFactoid)
-				bot.getCommand('factoidtrigger').sayFactoid(giveitem._processFactoid(f,item),bot,query)
+				bot.getCommand('factoidtrigger').triggerFactoid('takeitem',bot,query,item)
 				resp = self.Handled('Dropped %(item)s for %(who)s'%{"item":itemname,"who":nm_to_n(query.From())})
 				bot.log(resp['debug'])
 				return resp
 		return self.Unhandled()
 		
 class GiveItem(BotCommand):
-	def __init__(self):
+	def __init__(self, bot):
+		self._bot = bot
 		self._rx_action = []
 		for r in [r"puts\s((?P<particle>a|an|this|some|lots of)\s)?(?P<item>.+)\sin\s%(nick)s",
 				r"(gives|hands)\s%(nick)s\s((?P<particle>a|an|this|some|lots of)\s)?(?P<item>.+)",
@@ -153,8 +148,6 @@ class GiveItem(BotCommand):
 		self._itemsCache = None
 		
 	def Try(self,bot,query):
-		if self._items is None:
-			self._fillInventory(bot)
 		if query.Directed():
 			rx = self._rx_directed
 		elif query.IsAction():
@@ -177,7 +170,7 @@ class GiveItem(BotCommand):
 			if self.HasItem(item['name']):
 				f = 'nothanks'
 				this=item
-			elif len(self._items) == cfg.config['maxItems']:
+			elif len(self.Items()) == cfg.config['maxItems']:
 				f = 'maxitems'
 				self.TakeItem(item,bot)
 				this = item
@@ -190,7 +183,6 @@ class GiveItem(BotCommand):
 			bot.log(resp['debug'])
 			return resp
 		return self.Unhandled()
-	
 	
 	def IgnoreActions(self):
 		return False
@@ -213,21 +205,26 @@ class GiveItem(BotCommand):
 				while True:
 					i = self._itemsCache.values()[random.randint(0,len(self._itemsCache)-1)]
 					if not self.HasItem(i['name']):
-						self._items[i['name']]=i
+						self.Items()[i['name']]=i
 						break
-				
+	
+	def Items(self):
+		if self._items is None:
+			self._fillInventory(self._bot)
+		return self._items
+	
 	def HasItem(self, itemName):
-		return itemName in self._items.keys()
+		return itemName in self.Items().keys()
 		
 	def TakeItem(self, item, bot):
-		self._items[item['name']]=item
+		self.Items()[item['name']]=item
 		bot.sql(r"delete from pail_items where name=%s",(item['name']))
 		bot.sql(r"insert into pail_items (name,owner,particle) values (%s,%s,%s);",(item['name'],item['owner'],item['particle']))
 	
 	def DropItem(self, itemName):
 		if self.HasItem(itemName):
-			del self._items[itemName]
-		if len(self._items) < cfg.config['minItems']:
+			del self.Items()[itemName]
+		if len(self.Items()) < cfg.config['minItems']:
 			self.GetRandomItem()
 	
 	def ForgetItem(self, itemName, bot):
