@@ -197,7 +197,7 @@ class GiveItem(BotCommand):
 	
 	def _refreshItemCache(self,bot):
 		self._itemsCache = {}
-		for i in bot.sql("select name,owner,particle from bucket_items order by RAND() limit %s;",(cfg.config['maxItems']*5),['name','owner','particle']):
+		for i in bot.sql("select name,owner,particle from pail_items order by RAND() limit %s;",(cfg.config['maxItems']*5),['name','owner','particle']):
 			self._itemsCache[i['name']]=i
 	
 	def _fillInventory(self, bot):
@@ -221,8 +221,8 @@ class GiveItem(BotCommand):
 		
 	def TakeItem(self, item, bot):
 		self._items[item['name']]=item
-		bot.sql(r"delete from bucket_items where name=%s",(item['name']))
-		bot.sql(r"insert into bucket_items (name,owner,particle) values (%s,%s,%s);",(item['name'],item['owner'],item['particle']))
+		bot.sql(r"delete from pail_items where name=%s",(item['name']))
+		bot.sql(r"insert into pail_items (name,owner,particle) values (%s,%s,%s);",(item['name'],item['owner'],item['particle']))
 	
 	def DropItem(self, itemName):
 		if self.HasItem(itemName):
@@ -234,5 +234,5 @@ class GiveItem(BotCommand):
 		self.DropItem(itemName)
 		if itemName in self._itemsCache.keys():
 			del self._itemsCache[itemName]
-		bot.sql(r"delete from bucket_items where name=%s",(itemName))
+		bot.sql(r"delete from pail_items where name=%s",(itemName))
 		

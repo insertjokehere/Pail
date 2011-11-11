@@ -14,14 +14,14 @@ class Factory(CommandModuleFactory):
 
 class DeleteVariable(DeleteCommand):
 	def __init__(self):
-		DeleteCommand.__init__(self,r"(forget|delete)\s+var(iable)?\s+(?P<id>(#\d+)|(\w+))",'variable','bucket_vars',self._clearCache)
+		DeleteCommand.__init__(self,r"(forget|delete)\s+var(iable)?\s+(?P<id>(#\d+)|(\w+))",'variable','pail_vars',self._clearCache)
 	
 	def _clearCache(self,bot,key):
 		bot.getCommand('lookupvar').clearCache(key)
 		
 class ProtectVariable(ProtectCommand):
 	def __init__(self):
-		ProtectCommand.__init__(self,'variable',r'(?P<mode>protect|unprotect) var(iable)? (?P<key>(#\d+)|(\w+))','bucket_vars')
+		ProtectCommand.__init__(self,'variable',r'(?P<mode>protect|unprotect) var(iable)? (?P<key>(#\d+)|(\w+))','pail_vars')
 
 class AddVar(BotCommand):
 	def __init__(self):
@@ -33,7 +33,7 @@ class AddVar(BotCommand):
 			if _match:			
 				name=_match.group('name')
 				value = _match.group('value')
-				bot.sql('insert into bucket_vars (name,value,protected) values(%s,%s,%s)',(name,value,0))
+				bot.sql('insert into pail_vars (name,value,protected) values(%s,%s,%s)',(name,value,0))
 				self.OK(bot,query)
 				resp = self.Handled("%(who)s added value '%(val)s' to variable %(name)s"%{'who':nm_to_n(query.From()),'val':value,'name':name})
 				bot.log(resp['debug'])
@@ -136,7 +136,7 @@ class LookupVar(BotCommand):
 			elif varname in self._parent._cache:
 				return pickOne(self._parent._cache[varname])['value']
 			else:
-				vars = self._bot.sql(r"select value,id from bucket_vars where name=%s",(varname.lower()),['value','id'])
+				vars = self._bot.sql(r"select value,id from pail_vars where name=%s",(varname.lower()),['value','id'])
 				if len(vars)>0:
 					self._parent._cache[varname]=vars
 					return pickOne(self._parent._cache[varname])['value']

@@ -14,14 +14,14 @@ class Factory(CommandModuleFactory):
 		
 class DeleteFactoid(DeleteCommand):
 	def __init__(self):
-		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>(#\d+)|([^@$%]+))",'factoid','bucket_facts',self._clearCache)
+		DeleteCommand.__init__(self,r"(forget|delete)\s+fact(oid)?\s+(?P<id>(#\d+)|([^@$%]+))",'factoid','pail_facts',self._clearCache)
 		
 	def _clearCache(self,bot,key):
 		bot.getCommand('factoidtrigger').clearCache(key)
 		
 class ProtectFactoid(ProtectCommand):
 	def __init__(self):
-		ProtectCommand.__init__(self,'factoid',r'(?P<mode>protect|unprotect) fact(oid)? (?P<key>(#\d+)|([^@$%]+))','bucket_facts')
+		ProtectCommand.__init__(self,'factoid',r'(?P<mode>protect|unprotect) fact(oid)? (?P<key>(#\d+)|([^@$%]+))','pail_facts')
 		
 class FactoidTrigger(BotCommand):
 	
@@ -52,7 +52,7 @@ class FactoidTrigger(BotCommand):
 			facts = self._cache[name]
 			isCached = True
 		else:
-			facts = bot.sql(r'select name,method,response,id from bucket_facts where name=%s;',(name),['key','method','response','id'])
+			facts = bot.sql(r'select name,method,response,id from pail_facts where name=%s;',(name),['key','method','response','id'])
 			if len(facts) > 0:
 				self._cache[name] = facts
 				
@@ -98,7 +98,7 @@ class TeachFactoid(BotCommand):
 				if key in bot.getExport('specialfactoids') and not isAdmin(query.From()):
 					resp = self.Handed("Sorry %(who)s, you need to be an admin to modify that"%{'who':nm_to_n(query.From())})
 				else:
-					bot.sql(r"insert into bucket_facts (name,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
+					bot.sql(r"insert into pail_facts (name,method,response,id,protected) values(%s,%s,%s,0,0);",(key,method,response))
 					bot.getCommand('factoidtrigger').clearCache(_match.group(1).strip())
 					self.OK(bot,query)
 					resp = self.Handled("%(who)s added %(key)s => <%(method)s> %(response)s"%{'key':key,'method':method,'response':response,'who':query.From()})
