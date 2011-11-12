@@ -83,7 +83,7 @@ class FactoidTrigger(BotCommand):
 			if f is None:
 				return self.sayFactoid(f,bot,query,this)
 			else:
-				bot.log("Missing alias %(fact)s"%{"fact['key']"})
+				bot.log("Missing alias %(fact)s"%{'fact':fact['key']})
 				return None
 		else:
 			bot.say(query,"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message},this=this)
