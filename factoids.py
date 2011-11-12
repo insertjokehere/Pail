@@ -37,8 +37,10 @@ class FactoidTrigger(BotCommand):
 		
 		if len(facts) > 0:
 			fact = self.sayFactoid(facts,bot,query)
-			return self.Handled("#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached})
-			return resp
+			if fact is None:
+				return self.Unhandled()
+			else:
+				return self.Handled("#%(num)u: %(key)s => <%(method)s> %(response)s (Cached: %(isCached)s)"%{'key':fact['key'],'method':fact['method'],'response':fact['response'],'num':fact['id'],'isCached':isCached})
 		else:
 			return self.Unhandled()
 	
@@ -54,6 +56,8 @@ class FactoidTrigger(BotCommand):
 			facts = bot.sql(r'select name,method,response,id from pail_facts where name=%s;',(name),['key','method','response','id'])
 			if len(facts) > 0:
 				self._cache[name] = facts
+			else:
+				return None
 				
 		return {'isCached':isCached,'facts':facts}
 	
@@ -76,7 +80,11 @@ class FactoidTrigger(BotCommand):
 		elif fact['method'] == 'alias':
 			bot.log("Following alias for %(fact)s"%{"fact":fact['key']})
 			f = self._getFactoid(fact['response'],bot)['facts']
-			return self.sayFactoid(f,bot,query,this)
+			if f is None:
+				return self.sayFactoid(f,bot,query,this)
+			else:
+				bot.log("Missing alias %(fact)s"%{"fact['key']"})
+				return None
 		else:
 			bot.say(query,"%(key)s %(method)s %(response)s"%{'key':fact['key'],'method':fact['method'],'response':message},this=this)
 		return fact
