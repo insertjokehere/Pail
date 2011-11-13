@@ -154,7 +154,7 @@ class IrcQuery:
 		self._respondto = respondto
 		self._channel = channel
 		self._IsAction = isAction
-		if messagetext.lower().startswith(cfg.config['nickname'].lower()+": ") or messagetext.lower().startswith(cfg.config['nickname'].lower()+", "):
+		if lower(messagetext).startswith(cfg.config['nickname'].lower()+": ") or lower(messagetext).startswith(cfg.config['nickname'].lower()+", "):
 			self._messagetext = messagetext[len(cfg.config['nickname'])+2:].strip()
 			self._directed = True
 		else:
@@ -271,6 +271,7 @@ class Pail(SingleServerIRCBot):
 		c = self.connection
 		print "[%(time)s] %(message)s"%{'time':time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"message":logtext}
 		if cfg.config['logChannel']:
+			print logtext
 			c.privmsg(cfg.config['logChannel'],logtext)
 		
 	def processQuery(self, query):

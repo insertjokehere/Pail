@@ -4,6 +4,8 @@ import random
 import cfg
 
 
+def lower(s):
+	return s.decode('utf-8').lower()
 
 def pickOne(list):
 	r = random.randint(0,len(list)-1)
