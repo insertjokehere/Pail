@@ -21,7 +21,7 @@ class Factory(CommandModuleFactory):
 		e = []
 		if cfg.config['triggerBananas']:
 			e.append({'bananas':self._bananas})
-		return {'randomtrigger':e}
+		return {'randomtrigger':e,'specialfactoid':'bananas'}
 	
 	def TimerFunctions(self):
 		return [{'interval':cfg.config['randomTriggerInterval'],
@@ -36,7 +36,7 @@ class Factory(CommandModuleFactory):
 					self._bot.getCommand('trigger')._trigger(self._bot, q)
 	
 	def _bananas(self, bot, query):
-		bot.say(query,'Bananas!')
+		bot.getCommand('factoidtrigger').triggerFactoid('bananas',bot,query)
 	
 class Trigger(BotCommand):
 
