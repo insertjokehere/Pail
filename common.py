@@ -8,8 +8,13 @@ def lower(s):
 	return s.decode('utf-8').lower()
 
 def pickOne(list):
-	r = random.randint(0,len(list)-1)
-	return list[r]
+	if len(list) == 1:
+		return list[0]
+	elif len(list) == 0:
+		return None
+	else:
+		r = random.randint(0,len(list)-1)
+		return list[r]
 	
 def isAdmin(username):
 	return nm_to_n(username) in cfg.config['admins']

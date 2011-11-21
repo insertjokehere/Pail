@@ -70,6 +70,7 @@ class FactoidTrigger(BotCommand):
 			fact = facts
 		else:
 			fact = pickOne(facts)
+		if fact is None: return None
 		message = fact['response']
 		if fact['method']== 'reply':
 			bot.say(query,message,this=this)

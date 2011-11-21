@@ -23,6 +23,7 @@ import randomness
 import traceback
 import string
 import time
+import datetime
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -185,6 +186,7 @@ class Pail(SingleServerIRCBot):
 		#self.channel = channel
 		self._db = None
 		self._shutupin = []
+		self._lastMessageTime = {}
 		
 		modules = [factoids,variables,inventory,randomness]
 		
@@ -244,6 +246,12 @@ class Pail(SingleServerIRCBot):
 		for c in cfg.config['disabledCommands']:
 			self.disableCommand(c)
 
+	def lastMessageTime(self,channel):
+		if channel in self._lastMessageTime.keys():
+			return self._lastMessageTime[channel]
+		else:
+			return None
+		
 	def on_action(self, c,e):
 		q=IrcQuery(e.source(),e.target(),e.arguments()[0],isAction=True)
 		self.processQuery(q)
@@ -260,6 +268,7 @@ class Pail(SingleServerIRCBot):
 		self.processQuery(q)
 
 	def on_pubmsg(self, c, e):
+		self._lastMessageTime[e.target()] = datetime.datetime.now()
 		q = IrcQuery(e.source(),e.target(),e.arguments()[0],channel=e.target())
 		self.processQuery(q)
 	
@@ -275,6 +284,7 @@ class Pail(SingleServerIRCBot):
 			c.privmsg(cfg.config['logChannel'],logtext)
 		
 	def processQuery(self, query):
+		
 		if not nm_to_n(query.From()) in cfg.config['ignore']:
 			if query.Channel() in self._shutupin and not query.Directed() and not query.Channel() == cfg.config['logChannel']:
 				return
