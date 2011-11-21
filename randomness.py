@@ -33,14 +33,14 @@ class Factory(CommandModuleFactory):
 	def _dorandom(self,args):
 		for ch in self._bot.channels.keys():
 			if not ch == cfg.config['logChannel']:
-				delta = None
-				if not self._bot.lastMessageTime(ch) is None:
-					delta = datetime.datetime.now() - self._bot.lastMessageTime(ch)
-				if delta is None or delta >= datetime.timedelta(seconds=cfg.config['minNonIdleTime']):
-					self._bot.log("supressing randomness due to channel idle")
-				else:
-					r = random.randint(0,cfg.config["randomTriggerChance"])
-					if r == 0:
+				r = random.randint(0,cfg.config["randomTriggerChance"])
+				if r == 0:
+					delta = None
+					if not self._bot.lastMessageTime(ch) is None:
+						delta = datetime.datetime.now() - self._bot.lastMessageTime(ch)
+					if delta is None or delta >= datetime.timedelta(seconds=cfg.config['minNonIdleTime']):
+						self._bot.log("supressing randomness due to channel idle")
+					else:
 						q = IrcQuery('',ch,'',channel=ch)
 						self._bot.getCommand('trigger')._trigger(self._bot, q)
 	
