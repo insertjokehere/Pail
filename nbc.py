@@ -105,6 +105,8 @@ class BayesTrainer(BotCommand):
 				return self.Handled("%(who)s added %(mode)sitive data '%(data)s' to nbc %(name)s"%{'who':nm_to_n(query.From()),'data':_match.group("data"),'name':_match.group("name"),'mode':mode})
 			else:
 				return self.Unhandled()
+		else:
+			return self.Unhandled()
 
 class BayesTrigger(BotCommand):
 	
