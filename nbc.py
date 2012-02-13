@@ -90,7 +90,7 @@ class BayesTrainer(BotCommand):
 				trigger._cObj[trigger._lastClassifier].invalidateCache()
 				return self.Handled("%(who)s added positive data '%(data)s' to nbc %(name)s"%{'who':nm_to_n(query.From()),'data':trigger._last,'name':trigger._lastClassifier})
 			elif self._negRX.match(query.Message()) and trigger._last != "" and trigger._lastClassifier != "":
-				_match = trigger._negRX.match(query.Message())
+				_match = self._negRX.match(query.Message())
 				bot.sql("insert into pail_nbcdata values (0, %s , %s, %s)",(trigger._lastClassifier,"neg",trigger._last))
 				trigger._cObj[trigger._lastClassifier].invalidateCache()
 				return self.Handled("%(who)s added negitive data '%(data)s' to nbc %(name)s"%{'who':nm_to_n(query.From()),'data':trigger._last,'name':trigger._lastClassifier})
