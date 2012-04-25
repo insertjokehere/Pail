@@ -24,7 +24,7 @@ import traceback
 import string
 import time
 import datetime
-import nbc
+#import nbc
 
 class LastDebugCommand(BotCommand):
 	def __init__(self):
@@ -190,7 +190,8 @@ class Pail(SingleServerIRCBot):
 		self._shutupin = []
 		self._lastMessageTime = {}
 		
-		modules = [factoids,variables,inventory,randomness,nbc]
+		#modules = [factoids,variables,inventory,randomness,nbc]
+		modules = [factoids,variables,inventory,randomness]
 		
 		self._lastDebug = {}
 		
